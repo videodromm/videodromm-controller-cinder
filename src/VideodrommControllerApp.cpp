@@ -31,6 +31,9 @@ void VideodrommControllerApp::setup()
 	mVDRouter = VDRouter::create(mVDSettings);
 	// Animation
 	mVDAnimation = VDAnimation::create(mVDSettings);
+	// Image sequence
+	CI_LOG_V("Assets folder: " + mVDUtils->getPath("").string());
+	mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDUtils->getPath("mandalas").string(), 0));
 
 	updateWindowTitle();
 	fpb = 16.0f;
@@ -181,6 +184,21 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 		case KeyEvent::KEY_p:
 			if (mMovie) mMovie->play();
 			break;
+		case KeyEvent::KEY_LEFT:
+			mVDImageSequences[0]->pauseSequence();
+			mVDSettings->iBeat--;
+			// Seek to a new position in the sequence
+			mImageSequencePosition = mVDImageSequences[0]->getPlayheadPosition();
+			mVDImageSequences[0]->setPlayheadPosition(--mImageSequencePosition);
+			break;
+		case KeyEvent::KEY_RIGHT:
+			mVDImageSequences[0]->pauseSequence();
+			mVDSettings->iBeat++;
+			// Seek to a new position in the sequence
+			mImageSequencePosition = mVDImageSequences[0]->getPlayheadPosition();
+			mVDImageSequences[0]->setPlayheadPosition(++mImageSequencePosition);
+			break;
+
 		case KeyEvent::KEY_s:
 			//if (mMovie) mMovie->stop();
 			mVDAnimation->save();

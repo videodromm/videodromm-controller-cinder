@@ -71,6 +71,8 @@ private:
 	VDAnimationRef				mVDAnimation;
 	// Image sequence
 	vector<VDImageSequenceRef>	mVDImageSequences;
+	int							mImageSequencePosition;
+
 	// imgui
 	float						color[4];
 	float						backcolor[4];

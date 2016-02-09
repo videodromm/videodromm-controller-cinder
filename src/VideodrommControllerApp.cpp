@@ -18,7 +18,7 @@ void VideodrommControllerApp::setup()
 {
 	// Log
 	mVDLog = VDLog::create();
-	CI_LOG_V("Visualizer");
+	CI_LOG_V("Controller");
 	// Settings
 	mVDSettings = VDSettings::create();
 	mVDSettings->mLiveCode = false;

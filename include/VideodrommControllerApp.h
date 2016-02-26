@@ -22,6 +22,8 @@
 #include "VDImageSequence.h"
 // Fbo
 #include "VDFbo.h"
+// Audio
+#include "VDAudio.h"
 // UnionJack
 #include "UnionJack.h"
 // spout
@@ -76,6 +78,8 @@ private:
 	int							mImageSequencePosition;
 	// Fbo
 	vector<VDFboRef>			mVDFbos;
+	// Audio
+	VDAudioRef					mVDAudio;
 
 	// imgui
 	float						color[4];

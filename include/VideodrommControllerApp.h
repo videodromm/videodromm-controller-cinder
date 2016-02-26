@@ -20,6 +20,8 @@
 #include "VDAnimation.h"
 // Image sequence
 #include "VDImageSequence.h"
+// Fbo
+#include "VDFbo.h"
 // UnionJack
 #include "UnionJack.h"
 // spout
@@ -72,6 +74,8 @@ private:
 	// Image sequence
 	vector<VDImageSequenceRef>	mVDImageSequences;
 	int							mImageSequencePosition;
+	// Fbo
+	vector<VDFboRef>			mVDFbos;
 
 	// imgui
 	float						color[4];
@@ -110,7 +114,5 @@ private:
 	float						fpb;
 	// fbo
 	void						renderSceneToFbo();
-	gl::FboRef					mFbo;
-	static const int			FBO_WIDTH = 640, FBO_HEIGHT = 480;
 
 };

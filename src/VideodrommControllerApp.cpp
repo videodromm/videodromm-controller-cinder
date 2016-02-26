@@ -33,7 +33,9 @@ void VideodrommControllerApp::setup()
 	mVDAnimation = VDAnimation::create(mVDSettings);
 	// Image sequence
 	CI_LOG_V("Assets folder: " + mVDUtils->getPath("").string());
-	mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDUtils->getPath("mandalas").string(), 0));
+	mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDUtils->getPath("mandalas").string()));
+	// Fbo
+	mVDFbos.push_back(VDFbo::create(mVDSettings, "audio"));
 
 	updateWindowTitle();
 	fpb = 16.0f;
@@ -44,10 +46,7 @@ void VideodrommControllerApp::setup()
 	mVDUtils->getWindowsResolution();
 	setWindowSize(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight);
 	setWindowPos(ivec2(mVDSettings->mRenderX, mVDSettings->mRenderY));
-	// fbo
-	gl::Fbo::Format format;
-	//format.setSamples( 4 ); // uncomment this to enable 4x antialiasing
-	mFbo = gl::Fbo::create(FBO_WIDTH, FBO_HEIGHT, format.depthTexture());
+
 	// warping
 	gl::enableDepthRead();
 	gl::enableDepthWrite();
@@ -64,8 +63,8 @@ void VideodrommControllerApp::setup()
 		mWarps.push_back(WarpPerspectiveBilinear::create());
 	}
 
-	mSrcArea = Area(0, 0, FBO_WIDTH, FBO_HEIGHT);
-	Warp::setSize(mWarps, mFbo->getSize());
+	mSrcArea = Area(0, 0, 700, 500);
+	Warp::setSize(mWarps, mVDFbos[0]->getSize());
 	// load image
 	try {
 		mImage = gl::Texture::create(loadImage(loadAsset("help.jpg")),
@@ -293,10 +292,10 @@ void VideodrommControllerApp::renderSceneToFbo()
 	// this will restore the old framebuffer binding when we leave this function
 	// on non-OpenGL ES platforms, you can just call mFbo->unbindFramebuffer() at the end of the function
 	// but this will restore the "screen" FBO on OpenGL ES, and does the right thing on both platforms
-	gl::ScopedFramebuffer fbScp(mFbo);
+	gl::ScopedFramebuffer fbScp(mVDFbos[0]->getFboRef());
 	gl::clear(mVDAnimation->getBackgroundColor(), true);//mBlack
 	// setup the viewport to match the dimensions of the FBO
-	gl::ScopedViewport scpVp(ivec2(0), mFbo->getSize());
+	gl::ScopedViewport scpVp(ivec2(0), mVDFbos[0]->getSize());
 	if (mMovie) {
 		if (mMovie->isPlaying()) mMovie->draw();
 	}
@@ -310,18 +309,116 @@ void VideodrommControllerApp::draw()
 	// iterate over the warps and draw their content
 	for (auto &warp : mWarps) {
 		if (i == 0) {
-			warp->draw(mFbo->getColorTexture(), mFbo->getBounds());
+			warp->draw(mVDFbos[0]->getFboTexture(), mVDFbos[0]->getBounds());
 		}
 		else {
 			warp->draw(mImage, mSrcArea);
 		}
 		i++;
 	}
+	// imgui
+	xPos = margin;
+	yPos = margin;
+	const char* warpInputs[] = { "mix", "left", "right", "warp1", "warp2", "preview", "abp", "live", "w8", "w9", "w10", "w11", "w12", "w13", "w14", "w15" };
+
+#pragma region style
+	// our theme variables
+	ImGuiStyle& style = ui::GetStyle();
+	style.WindowRounding = 4;
+	style.WindowPadding = ImVec2(3, 3);
+	style.FramePadding = ImVec2(2, 2);
+	style.ItemSpacing = ImVec2(3, 3);
+	style.ItemInnerSpacing = ImVec2(3, 3);
+	style.WindowMinSize = ImVec2(w, mVDSettings->mPreviewFboHeight);
+	style.Alpha = 0.6f;
+	style.Colors[ImGuiCol_Text] = ImVec4(0.89f, 0.92f, 0.94f, 1.00f);
+	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.05f, 0.05f, 0.05f, 1.00f);
+	style.Colors[ImGuiCol_Border] = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
+	style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.38f);
+	style.Colors[ImGuiCol_FrameBg] = ImVec4(0.18f, 0.18f, 0.18f, 1.00f);
+	style.Colors[ImGuiCol_TitleBg] = ImVec4(0.4f, 0.21f, 0.21f, 1.00f);
+	style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.17f, 0.17f, 0.17f, 1.00f);
+	style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
+	style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
+	style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+	style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+	style.Colors[ImGuiCol_ComboBg] = ImVec4(0.13f, 0.13f, 0.13f, 1.00f);
+	style.Colors[ImGuiCol_CheckMark] = ImVec4(0.99f, 0.22f, 0.22f, 0.50f);
+	style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.65f, 0.25f, 0.25f, 1.00f);
+	style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.8f, 0.35f, 0.35f, 1.00f);
+	style.Colors[ImGuiCol_Button] = ImVec4(0.17f, 0.17f, 0.17f, 1.00f);
+	style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.27f, 0.27f, 0.27f, 1.00f);
+	style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.38f, 0.38f, 0.38f, 1.00f);
+	style.Colors[ImGuiCol_Header] = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
+	style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+	style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.27f, 0.27f, 0.27f, 1.00f);
+	style.Colors[ImGuiCol_Column] = ImVec4(0.04f, 0.04f, 0.04f, 0.22f);
+	style.Colors[ImGuiCol_ColumnHovered] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+	style.Colors[ImGuiCol_ColumnActive] = ImVec4(0.27f, 0.27f, 0.27f, 1.00f);
+	style.Colors[ImGuiCol_ResizeGrip] = ImVec4(0.65f, 0.25f, 0.25f, 1.00f);
+	style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.8f, 0.35f, 0.35f, 1.00f);
+	style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(0.9f, 0.45f, 0.45f, 1.00f);
+	style.Colors[ImGuiCol_CloseButton] = ImVec4(0.28f, 0.28f, 0.28f, 1.00f);
+	style.Colors[ImGuiCol_CloseButtonHovered] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+	style.Colors[ImGuiCol_CloseButtonActive] = ImVec4(0.49f, 0.49f, 0.49f, 1.00f);
+	style.Colors[ImGuiCol_PlotLines] = ImVec4(0.65f, 0.25f, 0.25f, 1.00f);
+	style.Colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.8f, 0.35f, 0.35f, 1.00f);
+	style.Colors[ImGuiCol_PlotHistogram] = ImVec4(0.65f, 0.25f, 0.25f, 1.00f);
+	style.Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.8f, 0.35f, 0.35f, 1.00f);
+	style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.24f, 0.24f, 0.24f, 1.00f);
+	style.Colors[ImGuiCol_TooltipBg] = ImVec4(0.65f, 0.25f, 0.25f, 1.00f);
+#pragma endregion style
+
+#pragma region mix
+	// left/warp1 fbo
+	ui::SetNextWindowSize(ImVec2(largePreviewW, largePreviewH), ImGuiSetCond_Once);
+	ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
+	ui::Begin("Left/warp1 fbo");
+	{
+		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
+		ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.1f, 0.6f, 0.6f));
+		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.1f, 0.7f, 0.7f));
+		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
+
+		sprintf_s(buf, "FV##f%d", 40);
+		ui::Image((void*)mVDFbos[0]->getId(), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
+
+		ui::PopStyleColor(3);
+		ui::PopItemWidth();
+	}
+	ui::End();
+	xPos += largePreviewW + margin;
+
+	// right/warp2 fbo
+	ui::SetNextWindowSize(ImVec2(largePreviewW, largePreviewH), ImGuiSetCond_Once);
+	ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
+	ui::Begin("Right/warp2 fbo");
+	{
+		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
+
+		ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.1f, 0.6f, 0.6f));
+		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.1f, 0.7f, 0.7f));
+		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
+
+		sprintf_s(buf, "FV##f%d", 41);
+
+		ui::Image((void*)mImage->getId(), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
+
+		ui::PopStyleColor(3);
+		ui::PopItemWidth();
+	}
+	ui::End();
+	xPos += largePreviewW + margin;
+
+
+	xPos += largePreviewW + margin;
+#pragma endregion mix
+
 }
 
 void VideodrommControllerApp::updateWindowTitle()
 {
-	getWindow()->setTitle("(" + mVDSettings->sFps + " fps) " + toString(mVDSettings->iBeat) + " Videodrömm");
+	getWindow()->setTitle("(" + mVDSettings->sFps + " fps) " + toString(mVDSettings->iBeat) + " Videodromm");
 
 }
 // If you're deploying to iOS, set the Render antialiasing to 0 for a significant

@@ -20,8 +20,10 @@
 #include "VDAnimation.h"
 // Image sequence
 #include "VDImageSequence.h"
-// Fbo
-#include "VDFbo.h"
+// Textures
+#include "VDTextures.h"
+// Shaders
+#include "VDShaders.h"
 // Audio
 #include "VDAudio.h"
 // UnionJack
@@ -76,10 +78,12 @@ private:
 	// Image sequence
 	vector<VDImageSequenceRef>	mVDImageSequences;
 	int							mImageSequencePosition;
-	// Fbo
-	vector<VDFboRef>			mVDFbos;
 	// Audio
 	VDAudioRef					mVDAudio;
+	// Shaders
+	VDShadersRef				mVDShaders;
+	// Textures
+	VDTexturesRef				mVDTextures;
 
 	// imgui
 	float						color[4];

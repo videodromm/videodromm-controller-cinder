@@ -36,8 +36,11 @@ void VideodrommControllerApp::setup()
 	mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDUtils->getPath("mandalas").string()));
 	// Audio
 	mVDAudio = VDAudio::create(mVDSettings);
-	// Fbo
-	mVDFbos.push_back(VDFbo::create(mVDSettings, "audio"));
+
+	// Shaders
+	mVDShaders = VDShaders::create(mVDSettings);
+	// Textures
+	mVDTextures = VDTextures::create(mVDSettings, mVDShaders);
 
 	updateWindowTitle();
 	fpb = 16.0f;
@@ -103,13 +106,15 @@ void VideodrommControllerApp::setup()
 	// set ui window and io events callbacks
 	ui::connectWindow(getWindow());
 	ui::initialize();
-
+	mVDAnimation->tapTempo();
 }
 void VideodrommControllerApp::cleanup()
 {
+	CI_LOG_V("shutdown");
 	// save warp settings
 	Warp::writeSettings(mWarps, writeFile(mSettings));
-
+	ui::Shutdown();
+	quit();
 }
 
 void VideodrommControllerApp::resize()

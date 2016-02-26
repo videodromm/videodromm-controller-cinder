@@ -69,7 +69,7 @@ void VideodrommControllerApp::setup()
 	}
 
 	mSrcArea = Area(0, 0, 700, 500);
-	Warp::setSize(mWarps, mVDFbos[0]->getSize());
+	// TODO Warp::setSize(mWarps, mVDFbos[0]->getSize());
 	// load image
 	try {
 		mImage = gl::Texture::create(loadImage(loadAsset("help.jpg")),
@@ -303,13 +303,13 @@ void VideodrommControllerApp::renderSceneToFbo()
 	// this will restore the old framebuffer binding when we leave this function
 	// on non-OpenGL ES platforms, you can just call mFbo->unbindFramebuffer() at the end of the function
 	// but this will restore the "screen" FBO on OpenGL ES, and does the right thing on both platforms
-	gl::ScopedFramebuffer fbScp(mVDFbos[0]->getFboRef());
+	/*gl::ScopedFramebuffer fbScp(mVDFbos[0]->getFboRef());
 	gl::clear(mVDAnimation->getBackgroundColor(), true);//mBlack
 	// setup the viewport to match the dimensions of the FBO
 	gl::ScopedViewport scpVp(ivec2(0), mVDFbos[0]->getSize());
 	if (mMovie) {
 		if (mMovie->isPlaying()) mMovie->draw();
-	}
+	}*/
 }
 void VideodrommControllerApp::draw()
 {
@@ -320,7 +320,7 @@ void VideodrommControllerApp::draw()
 	// iterate over the warps and draw their content
 	for (auto &warp : mWarps) {
 		if (i == 0) {
-			warp->draw(mVDFbos[0]->getFboTexture(), mVDFbos[0]->getBounds());
+			warp->draw(mVDTextures->getFboTexture(0), mVDTextures->getFboTexture(0)->getBounds());
 		}
 		else if (i == 1)  {
 			warp->draw(mImage, mSrcArea);
@@ -395,7 +395,7 @@ void VideodrommControllerApp::draw()
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
 
 		sprintf_s(buf, "FV##f%d", 40);
-		ui::Image((void*)mVDFbos[0]->getId(), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
+		ui::Image((void*)mVDTextures->getFboTextureId(0), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
 
 		ui::PopStyleColor(3);
 		ui::PopItemWidth();

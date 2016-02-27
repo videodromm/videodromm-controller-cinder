@@ -251,6 +251,7 @@ void VideodrommControllerApp::update()
 {
 	mVDSettings->iFps = getAverageFps();
 	mVDSettings->sFps = toString(floor(mVDSettings->iFps));
+	mVDTextures->update();
 	mVDAudio->update();
 	mVDUtils->update();
 	mVDRouter->update();
@@ -313,6 +314,7 @@ void VideodrommControllerApp::renderSceneToFbo()
 }
 void VideodrommControllerApp::draw()
 {
+	mVDTextures->draw();
 	// clear the window and set the drawing color to white
 	gl::clear();
 	gl::color(Color::white());
@@ -423,9 +425,103 @@ void VideodrommControllerApp::draw()
 	}
 	ui::End();
 	xPos += largePreviewW + margin;
-
+	yPos += largePreviewH + margin;
 #pragma endregion mix
 
+#pragma region channels
+	if (showChannels)
+	{
+		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
+
+		ui::Begin("Channels");
+		{
+			ui::Columns(3);
+			ui::SetColumnOffset(0, 4.0f);// int column_index, float offset)
+			ui::SetColumnOffset(1, 20.0f);// int column_index, float offset)
+			//ui::SetColumnOffset(2, 24.0f);// int column_index, float offset)
+			ui::Text("Chn"); ui::NextColumn();
+			ui::Text("Tex"); ui::NextColumn();
+			ui::Text("Name"); ui::NextColumn();
+			ui::Separator();
+			for (int i = 0; i < mVDSettings->MAX - 1; i++)
+			{
+				ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
+				ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
+				ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
+				ui::Text("c%d", i);
+				ui::NextColumn();
+				sprintf_s(buf, "%d", i);
+				if (ui::SliderInt(buf, &mVDSettings->iChannels[i], 0, mVDSettings->MAX - 1)) {
+				}
+				ui::NextColumn();
+				ui::PopStyleColor(3);
+				ui::Text("%s", mVDTextures->getTextureName(mVDSettings->iChannels[i]));
+				ui::NextColumn();
+			}
+			ui::Columns(1);
+		}
+		ui::End();
+		xPos += w * 2 + margin;
+	}
+#pragma endregion channels
+
+#pragma region Info
+
+	ui::SetNextWindowSize(ImVec2(largePreviewW + 20, largePreviewH), ImGuiSetCond_Once);
+	ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
+	sprintf_s(buf, "Fps %c %d###fps", "|/-\\"[(int)(ImGui::GetTime() / 0.25f) & 3], (int)mVDSettings->iFps);
+	ui::Begin(buf);
+	{
+		ImGui::PushItemWidth(mVDSettings->mPreviewFboWidth);
+		// fps
+		static ImVector<float> values; if (values.empty()) { values.resize(100); memset(&values.front(), 0, values.size()*sizeof(float)); }
+		static int values_offset = 0;
+		static float refresh_time = -1.0f;
+		if (ui::GetTime() > refresh_time + 1.0f / 6.0f)
+		{
+			refresh_time = ui::GetTime();
+			values[values_offset] = mVDSettings->iFps;
+			values_offset = (values_offset + 1) % values.size();
+		}
+		if (mVDSettings->iFps < 12.0) ui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+		ui::PlotLines("FPS", &values.front(), (int)values.size(), values_offset, mVDSettings->sFps.c_str(), 0.0f, 300.0f, ImVec2(0, 30));
+		if (mVDSettings->iFps < 12.0) ui::PopStyleColor();
+
+		// Checkbox
+		ui::Checkbox("Tex", &showTextures);
+		ui::SameLine();
+		ui::Checkbox("Fbos", &showFbos);
+		ui::SameLine();
+		ui::Checkbox("Shada", &showShaders);
+
+		ui::Checkbox("Audio", &showAudio);
+		ui::SameLine();
+		ui::Checkbox("Cmd", &showConsole);
+		ui::SameLine();
+		ui::Checkbox("OSC", &showOSC);
+
+		ui::Checkbox("MIDI", &showMidi);
+		ui::SameLine();
+		ui::Checkbox("Test", &showTest);
+		if (ui::Button("Save Params"))
+		{
+			// save warp settings
+			Warp::writeSettings(mWarps, writeFile("warps1.xml"));
+			// save params
+			mVDSettings->save();
+		}
+
+		mVDSettings->iDebug ^= ui::Button("Debug");
+		ui::SameLine();
+		mVDSettings->mRenderThumbs ^= ui::Button("Thumbs");
+		ui::PopItemWidth();
+		if (ui::Button("Stop Loading")) mVDImageSequences[0]->stopLoading();
+	}
+	ui::End();
+	xPos += largePreviewW + 20 + margin;
+
+#pragma endregion Info
 
 #pragma region Audio
 
@@ -475,9 +571,692 @@ void VideodrommControllerApp::draw()
 		}
 		ui::End();
 		xPos += largePreviewW + 20 + margin;
-		//yPos += largePreviewH + margin;
+		
 	}
 #pragma endregion Audio
+
+
+#pragma region MIDI
+
+	// MIDI window
+	if (showMidi)
+	{
+		ui::SetNextWindowSize(ImVec2(largePreviewW + 20, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
+		ui::Begin("MIDI");
+		{
+			sprintf_s(buf, "Enable");
+			if (ui::Button(buf)) mVDRouter->midiSetup();
+			if (ui::CollapsingHeader("MidiIn", "20", true, true))
+			{
+				ui::Columns(2, "data", true);
+				ui::Text("Name"); ui::NextColumn();
+				ui::Text("Connect"); ui::NextColumn();
+				ui::Separator();
+
+				for (int i = 0; i < mVDRouter->getMidiInPortsCount(); i++)
+				{
+					ui::Text(mVDRouter->getMidiInPortName(i).c_str()); ui::NextColumn();
+
+					if (mVDRouter->isMidiInConnected(i))
+					{
+						sprintf_s(buf, "Disconnect %d", i);
+					}
+					else
+					{
+						sprintf_s(buf, "Connect %d", i);
+					}
+
+					if (ui::Button(buf))
+					{
+						if (mVDRouter->isMidiInConnected(i))
+						{
+							mVDRouter->closeMidiInPort(i);
+						}
+						else
+						{
+							mVDRouter->openMidiInPort(i);
+						}
+					}
+					ui::NextColumn();
+					ui::Separator();
+				}
+				ui::Columns(1);
+			}
+		}
+		ui::End();
+		xPos += largePreviewW + 20 + margin;
+		yPos = margin;
+
+	}
+#pragma endregion MIDI
+
+#pragma region Global
+
+	ui::SetNextWindowSize(ImVec2(largeW, displayHeight), ImGuiSetCond_Once);
+	ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
+	ui::Begin("Animation");
+	{
+		ImGui::PushItemWidth(mVDSettings->mPreviewFboWidth);
+
+		if (ui::CollapsingHeader("Mouse", NULL, true, true))
+		{
+			ui::Text("Mouse Position: (%.1f,%.1f)", ui::GetIO().MousePos.x, ui::GetIO().MousePos.y); ui::SameLine();
+			ui::Text("Clic %d", ui::GetIO().MouseDown[0]);
+			mouseGlobal ^= ui::Button("mouse gbl");
+			if (mouseGlobal)
+			{
+				mVDSettings->mRenderPosXY.x = ui::GetIO().MousePos.x; ui::SameLine();
+				mVDSettings->mRenderPosXY.y = ui::GetIO().MousePos.y;
+				mVDSettings->iMouse.z = ui::GetIO().MouseDown[0];
+			}
+			else
+			{
+
+				mVDSettings->iMouse.z = ui::Button("mouse click");
+			}
+			ui::SliderFloat("MouseX", &mVDSettings->mRenderPosXY.x, 0, mVDSettings->mFboWidth);
+			ui::SliderFloat("MouseY", &mVDSettings->mRenderPosXY.y, 0, 2048);// mVDSettings->mFboHeight);
+
+		}
+		if (ui::CollapsingHeader("Effects", NULL, true, true))
+		{
+			int hue = 0;
+
+			(mVDSettings->iRepeat) ? ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(hue / 7.0f, 1.0f, 0.5f)) : ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(1.0f, 0.1f, 0.1f));
+			ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(hue / 7.0f, 0.7f, 0.7f));
+			ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(hue / 7.0f, 0.8f, 0.8f));
+			mVDSettings->iRepeat ^= ui::Button("repeat");
+			ui::PopStyleColor(3);
+			hue++;
+			ui::SameLine();
+
+			(mVDSettings->controlValues[45]) ? ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(hue / 7.0f, 1.0f, 0.5f)) : ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(1.0f, 0.1f, 0.1f));
+			ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(hue / 7.0f, 0.7f, 0.7f));
+			ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(hue / 7.0f, 0.8f, 0.8f));
+			if (ui::Button("glitch")) { mVDSettings->controlValues[45] = !mVDSettings->controlValues[45]; }
+			ui::PopStyleColor(3);
+			hue++;
+			ui::SameLine();
+
+			(mVDSettings->controlValues[46]) ? ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(hue / 7.0f, 1.0f, 0.5f)) : ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(1.0f, 0.1f, 0.1f));
+			ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(hue / 7.0f, 0.7f, 0.7f));
+			ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(hue / 7.0f, 0.8f, 0.8f));
+			if (ui::Button("toggle")) { mVDSettings->controlValues[46] = !mVDSettings->controlValues[46]; }
+			ui::PopStyleColor(3);
+			hue++;
+			ui::SameLine();
+
+			(mVDSettings->controlValues[47]) ? ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(hue / 7.0f, 1.0f, 0.5f)) : ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(1.0f, 0.1f, 0.1f));
+			ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(hue / 7.0f, 0.7f, 0.7f));
+			ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(hue / 7.0f, 0.8f, 0.8f));
+			if (ui::Button("vignette")) { mVDSettings->controlValues[47] = !mVDSettings->controlValues[47]; }
+			ui::PopStyleColor(3);
+			hue++;
+
+			(mVDSettings->controlValues[48]) ? ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(hue / 7.0f, 1.0f, 0.5f)) : ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(1.0f, 0.1f, 0.1f));
+			ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(hue / 7.0f, 0.7f, 0.7f));
+			ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(hue / 7.0f, 0.8f, 0.8f));
+			if (ui::Button("invert")) { mVDSettings->controlValues[48] = !mVDSettings->controlValues[48]; }
+			ui::PopStyleColor(3);
+			hue++;
+			ui::SameLine();
+
+			(mVDSettings->iGreyScale) ? ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(hue / 7.0f, 1.0f, 0.5f)) : ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(1.0f, 0.1f, 0.1f));
+			ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(hue / 7.0f, 0.7f, 0.7f));
+			ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(hue / 7.0f, 0.8f, 0.8f));
+			mVDSettings->iGreyScale ^= ui::Button("greyscale");
+			ui::PopStyleColor(3);
+			hue++;
+			ui::SameLine();
+
+			if (ui::Button("blackout"))
+			{
+				mVDSettings->controlValues[1] = mVDSettings->controlValues[2] = mVDSettings->controlValues[3] = mVDSettings->controlValues[4] = 0.0;
+				mVDSettings->controlValues[5] = mVDSettings->controlValues[6] = mVDSettings->controlValues[7] = mVDSettings->controlValues[8] = 0.0;
+			}
+		}
+		if (ui::CollapsingHeader("Animation", NULL, true, true))
+		{
+
+			ui::SliderInt("mUIRefresh", &mVDSettings->mUIRefresh, 1, 255);
+			int ctrl;
+			stringstream aParams;
+			aParams << "{\"params\" :[{\"name\" : 0,\"value\" : " << getElapsedFrames() << "}"; // TimeStamp
+
+			// iChromatic
+			ctrl = 10;
+			if (ui::Button("a##chromatic")) { mVDAnimation->lockChromatic(); }
+			ui::SameLine();
+			if (ui::Button("t##chromatic")) { mVDAnimation->tempoChromatic(); }
+			ui::SameLine();
+			if (ui::Button("x##chromatic")) { mVDAnimation->resetChromatic(); }
+			ui::SameLine();
+			if (ui::SliderFloat("chromatic/min/max", &mVDSettings->controlValues[ctrl], mVDAnimation->minChromatic, mVDAnimation->maxChromatic))
+			{
+				aParams << ",{\"name\" : " << ctrl << ",\"value\" : " << mVDSettings->controlValues[ctrl] << "}";
+			}
+
+			// ratio
+			ctrl = 11;
+			if (ui::Button("a##ratio")) { mVDAnimation->lockRatio(); }
+			ui::SameLine();
+			if (ui::Button("t##ratio")) { mVDAnimation->tempoRatio(); }
+			ui::SameLine();
+			if (ui::Button("x##ratio")) { mVDAnimation->resetRatio(); }
+			ui::SameLine();
+			if (ui::SliderFloat("ratio/min/max", &mVDSettings->controlValues[ctrl], mVDAnimation->minRatio, mVDAnimation->maxRatio))
+			{
+				aParams << ",{\"name\" : " << ctrl << ",\"value\" : " << mVDSettings->controlValues[ctrl] << "}";
+			}
+			// exposure
+			ctrl = 14;
+			if (ui::Button("a##exposure")) { mVDAnimation->lockExposure(); }
+			ui::SameLine();
+			if (ui::Button("t##exposure")) { mVDAnimation->tempoExposure(); }
+			ui::SameLine();
+			if (ui::Button("x##exposure")) { mVDAnimation->resetExposure(); }
+			ui::SameLine();
+			if (ui::DragFloat("exposure", &mVDSettings->controlValues[ctrl], 0.1f, mVDAnimation->minExposure, mVDSettings->maxExposure))
+			{
+				aParams << ",{\"name\" : " << ctrl << ",\"value\" : " << mVDSettings->controlValues[ctrl] << "}";
+			}
+
+			// zoom
+			ctrl = 22;
+			if (ui::Button("a##zoom"))
+			{
+				mVDAnimation->lockZoom();
+			}
+			ui::SameLine();
+			if (ui::Button("t##zoom")) { mVDAnimation->tempoZoom(); }
+			ui::SameLine();
+			if (ui::Button("x##zoom")) { mVDAnimation->resetZoom(); }
+			ui::SameLine();
+			if (ui::DragFloat("zoom", &mVDSettings->controlValues[ctrl], 0.1f, mVDAnimation->minZoom, mVDAnimation->maxZoom))
+			{
+				aParams << ",{\"name\" : " << ctrl << ",\"value\" : " << mVDSettings->controlValues[ctrl] << "}";
+			}
+			// z position
+			ctrl = 9;
+			if (ui::Button("a##zpos")) { mVDAnimation->lockZPos(); }
+			ui::SameLine();
+			if (ui::Button("t##zpos")) { mVDAnimation->tempoZPos(); }
+			ui::SameLine();
+			if (ui::Button("x##zpos")) { mVDAnimation->resetZPos(); }
+			ui::SameLine();
+			if (ui::SliderFloat("zPosition", &mVDSettings->controlValues[ctrl], mVDAnimation->minZPos, mVDAnimation->maxZPos))
+			{
+				aParams << ",{\"name\" : " << ctrl << ",\"value\" : " << mVDSettings->controlValues[ctrl] << "}";
+			}
+
+			// rotation speed 
+			ctrl = 19;
+			if (ui::Button("a##rotationspeed")) { mVDAnimation->lockRotationSpeed(); }
+			ui::SameLine();
+			if (ui::Button("t##rotationspeed")) { mVDAnimation->tempoRotationSpeed(); }
+			ui::SameLine();
+			if (ui::Button("x##rotationspeed")) { mVDAnimation->resetRotationSpeed(); }
+			ui::SameLine();
+			if (ui::DragFloat("rotationSpeed", &mVDSettings->controlValues[ctrl], 0.01f, mVDAnimation->minRotationSpeed, mVDAnimation->maxRotationSpeed))
+			{
+				aParams << ",{\"name\" : " << ctrl << ",\"value\" : " << mVDSettings->controlValues[ctrl] << "}";
+			}
+			// badTv
+			if (ui::Button("x##badtv")) { mVDSettings->iBadTv = 0.0f; }
+			ui::SameLine();
+			if (ui::SliderFloat("badTv/min/max", &mVDSettings->iBadTv, 0.0f, 5.0f))
+			{
+			}
+			// param1
+			if (ui::Button("x##param1")) { mVDSettings->iParam1 = 1.0f; }
+			ui::SameLine();
+			if (ui::SliderFloat("param1/min/max", &mVDSettings->iParam1, 0.01f, 100.0f))
+			{
+			}
+			// param2
+			if (ui::Button("x##param2")) { mVDSettings->iParam2 = 1.0f; }
+			ui::SameLine();
+			if (ui::SliderFloat("param2/min/max", &mVDSettings->iParam2, 0.01f, 100.0f))
+			{
+			}
+			sprintf_s(buf, "XorY");
+			mVDSettings->iXorY ^= ui::Button(buf);
+			// blend modes
+			if (ui::Button("x##blendmode")) { mVDSettings->iBlendMode = 0.0f; }
+			ui::SameLine();
+			ui::SliderInt("blendmode", &mVDSettings->iBlendMode, 0, mVDSettings->maxBlendMode);
+
+			// steps
+			ctrl = 20;
+			if (ui::Button("x##steps")) { mVDSettings->controlValues[ctrl] = 16.0f; }
+			ui::SameLine();
+			if (ui::SliderFloat("steps", &mVDSettings->controlValues[ctrl], 1.0f, 128.0f))
+			{
+				aParams << ",{\"name\" : " << ctrl << ",\"value\" : " << mVDSettings->controlValues[ctrl] << "}";
+			}
+			// pixelate
+			ctrl = 15;
+			if (ui::Button("x##pixelate")) { mVDSettings->controlValues[ctrl] = 1.0f; }
+			ui::SameLine();
+			if (ui::SliderFloat("pixelate", &mVDSettings->controlValues[ctrl], 0.01f, 1.0f))
+			{
+				aParams << ",{\"name\" : " << ctrl << ",\"value\" : " << mVDSettings->controlValues[ctrl] << "}";
+			}
+			// trixels
+			ctrl = 16;
+			if (ui::Button("x##trixels")) { mVDSettings->controlValues[ctrl] = 0.0f; }
+			ui::SameLine();
+			if (ui::SliderFloat("trixels", &mVDSettings->controlValues[ctrl], 0.00f, 1.0f))
+			{
+				aParams << ",{\"name\" : " << ctrl << ",\"value\" : " << mVDSettings->controlValues[ctrl] << "}";
+			}
+			// grid
+			ctrl = 17;
+			if (ui::Button("x##grid")) { mVDSettings->controlValues[ctrl] = 0.0f; }
+			ui::SameLine();
+			if (ui::SliderFloat("grid", &mVDSettings->controlValues[ctrl], 0.00f, 60.0f))
+			{
+				aParams << ",{\"name\" : " << ctrl << ",\"value\" : " << mVDSettings->controlValues[ctrl] << "}";
+			}
+
+			aParams << "]}";
+			string strAParams = aParams.str();
+			if (strAParams.length() > 60)
+			{
+				mVDRouter->sendJSON(strAParams);
+
+			}
+		}
+		ui::PopItemWidth();
+		if (ui::CollapsingHeader("Colors", NULL, true, true))
+		{
+			stringstream sParams;
+			bool colorChanged = false;
+			sParams << "{\"params\" :[{\"name\" : 0,\"value\" : " << getElapsedFrames() << "}"; // TimeStamp
+			// foreground color
+			color[0] = mVDSettings->controlValues[1];
+			color[1] = mVDSettings->controlValues[2];
+			color[2] = mVDSettings->controlValues[3];
+			color[3] = mVDSettings->controlValues[4];
+			ui::ColorEdit4("f", color);
+
+			for (int i = 0; i < 4; i++)
+			{
+				if (mVDSettings->controlValues[i + 1] != color[i])
+				{
+					sParams << ",{\"name\" : " << i + 1 << ",\"value\" : " << color[i] << "}";
+					mVDSettings->controlValues[i + 1] = color[i];
+					colorChanged = true;
+				}
+			}
+			if (colorChanged) mVDRouter->colorWrite(); //lights4events
+
+			// background color
+			backcolor[0] = mVDSettings->controlValues[5];
+			backcolor[1] = mVDSettings->controlValues[6];
+			backcolor[2] = mVDSettings->controlValues[7];
+			backcolor[3] = mVDSettings->controlValues[8];
+			ui::ColorEdit4("g", backcolor);
+			for (int i = 0; i < 4; i++)
+			{
+				if (mVDSettings->controlValues[i + 5] != backcolor[i])
+				{
+					sParams << ",{\"name\" : " << i + 5 << ",\"value\" : " << backcolor[i] << "}";
+					mVDSettings->controlValues[i + 5] = backcolor[i];
+				}
+
+			}
+			// color multipliers
+			if (ui::Button("x##RedX")) { mVDSettings->iRedMultiplier = 1.0f; }
+			ui::SameLine();
+			if (ui::SliderFloat("RedX", &mVDSettings->iRedMultiplier, 0.0f, 3.0f))
+			{
+			}
+			if (ui::Button("x##GreenX")) { mVDSettings->iGreenMultiplier = 1.0f; }
+			ui::SameLine();
+			if (ui::SliderFloat("GreenX", &mVDSettings->iGreenMultiplier, 0.0f, 3.0f))
+			{
+			}
+			if (ui::Button("x##BlueX")) { mVDSettings->iBlueMultiplier = 1.0f; }
+			ui::SameLine();
+			if (ui::SliderFloat("BlueX", &mVDSettings->iBlueMultiplier, 0.0f, 3.0f))
+			{
+			}
+
+			sParams << "]}";
+			string strParams = sParams.str();
+			if (strParams.length() > 60)
+			{
+				mVDRouter->sendJSON(strParams);
+			}
+
+		}
+
+		if (ui::CollapsingHeader("Camera", NULL, true, true))
+		{
+			ui::SliderFloat("Pos.x", &mVDSettings->mRenderPosXY.x, 0.0f, mVDSettings->mRenderWidth);
+			ui::SliderFloat("Pos.y", &mVDSettings->mRenderPosXY.y, 0.0f, mVDSettings->mRenderHeight);
+			float eyeZ = mVDSettings->mCamera.getEyePoint().z;
+			if (ui::SliderFloat("Eye.z", &eyeZ, -500.0f, 1.0f))
+			{
+				vec3 eye = mVDSettings->mCamera.getEyePoint();
+				eye.z = eyeZ;
+				mVDSettings->mCamera.setEyePoint(eye);
+			}
+			ui::SliderFloat("ABP Bend", &mVDSettings->mBend, -20.0f, 20.0f);
+
+		}
+
+	}
+	ui::End();
+
+#pragma endregion Global
+	// next line
+	xPos = margin;
+	yPos += largePreviewH + margin;
+	/*
+#pragma region warps
+	if (mVDSettings->mMode == MODE_WARP)
+	{
+		for (int i = 0; i < mBatchass->getWarpsRef()->getWarpsCount(); i++)
+		{
+			sprintf_s(buf, "Warp %d", i);
+			ui::SetNextWindowSize(ImVec2(w, h));
+			ui::Begin(buf);
+			{
+				ui::SetWindowPos(ImVec2((i * (w + inBetween)) + margin, yPos));
+				ui::PushID(i);
+				ui::Image((void*)mBatchass->getTexturesRef()->getFboTextureId(mVDSettings->mWarpFbos[i].textureIndex), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
+				ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
+				ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
+				ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
+				sprintf_s(buf, "%d", mVDSettings->mWarpFbos[i].textureIndex);
+				if (ui::SliderInt(buf, &mVDSettings->mWarpFbos[i].textureIndex, 0, mVDSettings->MAX - 1)) {
+				}
+				sprintf_s(buf, "%s", warpInputs[mVDSettings->mWarpFbos[i].textureIndex]);
+				ui::Text(buf);
+
+				ui::PopStyleColor(3);
+				ui::PopID();
+			}
+			ui::End();
+		}
+		yPos += h + margin;
+	}
+#pragma endregion warps
+*/
+#pragma region textures
+	if (showTextures)
+	{
+		for (int i = 0; i < mVDTextures->getTextureCount(); i++)
+		{
+			ui::SetNextWindowSize(ImVec2(w, h*1.4));
+			ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPos));
+			//ui::Begin(textureNames[i], NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+			ui::Begin(mVDTextures->getTextureName(i), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+			{
+				ui::PushID(i);
+				ui::Image((void*)mVDTextures->getTexture(i)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
+				ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
+				ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
+				ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
+				//BEGIN
+				sprintf_s(buf, "WS##s%d", i);
+				if (ui::Button(buf))
+				{
+					sprintf_s(buf, "IMG=%d.jpg", i);
+					//mBatchass->wsWrite(buf);
+				}
+				if (ui::IsItemHovered()) ui::SetTooltip("Send texture file name via WebSockets");
+				ui::SameLine();
+				sprintf_s(buf, "FV##s%d", i);
+				if (ui::Button(buf))
+				{
+					mVDTextures->flipTexture(i);
+				}
+				/*
+				if (mVDImageSequences[i]->isSequence(i)) {
+					if (!mVDImageSequences[i]->isLoadingFromDisk()) {
+						ui::SameLine();
+						sprintf_s(buf, "LD##s%d", i);
+						if (ui::Button(buf))
+						{
+							mVDImageSequences[i]->toggleLoadingFromDisk(i);
+						}
+						if (ui::IsItemHovered()) ui::SetTooltip("Pause loading from disk");
+					}
+					sprintf_s(buf, ">##s%d", i);
+					if (ui::Button(buf))
+					{
+						mVDImageSequences[i]->playSequence(i);
+					}
+					ui::SameLine();
+					sprintf_s(buf, "\"##s%d", i);
+					if (ui::Button(buf))
+					{
+						mVDImageSequences[i]->pauseSequence(i);
+					}
+					ui::SameLine();
+					sprintf_s(buf, "r##s%d", i);
+					if (ui::Button(buf))
+					{
+						mVDImageSequences[i]->reverseSequence(i);
+					}
+					ui::SameLine();
+					playheadPositions[i] = mVDImageSequences[i]->getPlayheadPosition(i);
+					sprintf_s(buf, "p%d##s%d", playheadPositions[i], i);
+					if (ui::Button(buf))
+					{
+						mVDImageSequences[i]->setPlayheadPosition(i, 0);
+					}
+
+					if (ui::SliderInt("scrub", &playheadPositions[i], 0, mVDImageSequences[i]->getMaxFrames(i)))
+					{
+						mVDImageSequences[i]->setPlayheadPosition(i, playheadPositions[i]);
+					}
+					speeds[i] = mVDImageSequences[i]->getSpeed(i);
+					if (ui::SliderFloat("speed", &speeds[i], 0.0f, 6.0f))
+					{
+						mVDImageSequences[i]->setSpeed(i, speeds[i]);
+					}
+
+				}*/
+
+				//END
+				ui::PopStyleColor(3);
+				ui::PopID();
+			}
+			ui::End();
+		}
+		yPos += h*1.4 + margin;
+	}
+#pragma endregion textures
+
+#pragma region library
+	if (showShaders)
+	{
+		static ImGuiTextFilter filter;
+		ui::SetNextWindowSize(ImVec2(w, h));
+		ui::SetNextWindowPos(ImVec2(800, 240));
+		ui::Begin("Filter", NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+		{
+			ui::Text("Filter usage:\n"
+				"  \"\"         display all lines\n"
+				"  \"xxx\"      display lines containing \"xxx\"\n"
+				"  \"xxx,yyy\"  display lines containing \"xxx\" or \"yyy\"\n"
+				"  \"-xxx\"     hide lines containing \"xxx\"");
+			filter.Draw();
+
+
+			for (int i = 0; i < mVDShaders->getCount(); i++)
+			{
+				if (filter.PassFilter(mVDShaders->getShader(i).name.c_str()))
+					ui::BulletText("%s", mVDShaders->getShader(i).name.c_str());
+			}
+		}
+		ui::End();
+		xPos = margin;
+		for (int i = 0; i < mVDShaders->getCount(); i++)
+		{
+			if (filter.PassFilter(mVDShaders->getShader(i).name.c_str()) && mVDShaders->getShader(i).active)
+			{
+				if (mVDSettings->iTrack == i) {
+					sprintf_s(buf, "SEL ##lsh%d", i);
+				}
+				else {
+					sprintf_s(buf, "%d##lsh%d", mVDShaders->getShader(i).microseconds, i);
+				}
+
+				ui::SetNextWindowSize(ImVec2(w, h));
+				ui::SetNextWindowPos(ImVec2(xPos + margin, yPos));
+				ui::Begin(buf, NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+				{
+					xPos += w + inBetween;
+					if (xPos > mVDSettings->MAX * w * 1.0)
+					{
+						xPos = margin;
+						yPos += h + margin;
+					}
+					ui::PushID(i);
+					ui::Image((void*)mVDTextures->getShaderThumbTextureId(i), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
+					if (ui::IsItemHovered()) ui::SetTooltip(mVDShaders->getShader(i).name.c_str());
+
+					//ui::Columns(2, "lr", false);
+					// left
+					if (mVDSettings->mLeftFragIndex == i)
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 1.0f, 0.5f));
+					}
+					else
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 0.1f, 0.1f));
+
+					}
+					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.0f, 0.7f, 0.7f));
+					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.0f, 0.8f, 0.8f));
+					sprintf_s(buf, "L##s%d", i);
+					// TODO if (ui::Button(buf)) mBatchass->selectShader(true, i);
+					if (ui::IsItemHovered()) ui::SetTooltip("Set shader to left");
+					ui::PopStyleColor(3);
+					//ui::NextColumn();
+					ui::SameLine();
+					// right
+					if (mVDSettings->mRightFragIndex == i)
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.3f, 1.0f, 0.5f));
+					}
+					else
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 0.1f, 0.1f));
+					}
+					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.3f, 0.7f, 0.7f));
+					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.3f, 0.8f, 0.8f));
+					sprintf_s(buf, "R##s%d", i);
+					// TODO if (ui::Button(buf))  mBatchass->selectShader(false, i);
+					if (ui::IsItemHovered()) ui::SetTooltip("Set shader to right");
+					ui::PopStyleColor(3);
+					//ui::NextColumn();
+					ui::SameLine();
+					// preview
+					if (mVDSettings->mPreviewFragIndex == i)
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.6f, 1.0f, 0.5f));
+					}
+					else
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 0.1f, 0.1f));
+					}
+					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.6f, 0.7f, 0.7f));
+					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.6f, 0.8f, 0.8f));
+					sprintf_s(buf, "P##s%d", i);
+					if (ui::Button(buf)) mVDSettings->mPreviewFragIndex = i;
+					if (ui::IsItemHovered()) ui::SetTooltip("Preview shader");
+					ui::PopStyleColor(3);
+
+					// warp1
+					if (mVDSettings->mWarp1FragIndex == i)
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.16f, 1.0f, 0.5f));
+					}
+					else
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 0.1f, 0.1f));
+					}
+					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.16f, 0.7f, 0.7f));
+					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.16f, 0.8f, 0.8f));
+					sprintf_s(buf, "1##s%d", i);
+					if (ui::Button(buf)) mVDSettings->mWarp1FragIndex = i;
+					if (ui::IsItemHovered()) ui::SetTooltip("Set warp 1 shader");
+					ui::PopStyleColor(3);
+					ui::SameLine();
+
+					// warp2
+					if (mVDSettings->mWarp2FragIndex == i)
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.77f, 1.0f, 0.5f));
+					}
+					else
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 0.1f, 0.1f));
+					}
+					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.77f, 0.7f, 0.7f));
+					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.77f, 0.8f, 0.8f));
+					sprintf_s(buf, "2##s%d", i);
+					if (ui::Button(buf)) mVDSettings->mWarp2FragIndex = i;
+					if (ui::IsItemHovered()) ui::SetTooltip("Set warp 2 shader");
+					ui::PopStyleColor(3);
+
+					// enable removing shaders
+					if (i > 4)
+					{
+						ui::SameLine();
+						sprintf_s(buf, "X##s%d", i);
+						if (ui::Button(buf)) mVDShaders->removePixelFragmentShaderAtIndex(i);
+						if (ui::IsItemHovered()) ui::SetTooltip("Remove shader");
+					}
+
+					ui::PopID();
+
+				}
+				ui::End();
+			} // if filtered
+
+		} // for
+		xPos = margin;
+		yPos += h + margin;
+	}
+#pragma endregion library
+
+#pragma region fbos
+
+	if (showFbos)
+	{
+		for (int i = 0; i < mVDTextures->getFboCount(); i++)
+		{
+			ui::SetNextWindowSize(ImVec2(w, h));
+			ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPos));
+			ui::Begin(mVDTextures->getFboName(i), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+			{
+				//if (i > 0) ui::SameLine();
+				ui::PushID(i);
+				ui::Image((void*)mVDTextures->getFboTextureId(i), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
+				ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
+				ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
+				ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
+
+				sprintf_s(buf, "FV##f%d", i);
+				if (ui::Button(buf)) mVDTextures->flipFboV(i);
+				if (ui::IsItemHovered()) ui::SetTooltip("Flip vertically");
+
+				ui::PopStyleColor(3);
+				ui::PopID();
+			}
+			ui::End();
+		}
+		yPos += h + margin;
+	}
+#pragma endregion fbos
 
 }
 

@@ -44,10 +44,10 @@ void VideodrommControllerApp::setup()
 	mVDSession = VDSession::create(mVDSettings);
 	// Utils
 	mVDUtils = VDUtils::create(mVDSettings);
-	// Message router
-	mVDRouter = VDRouter::create(mVDSettings);
 	// Animation
 	mVDAnimation = VDAnimation::create(mVDSettings);
+	// Message router
+	mVDRouter = VDRouter::create(mVDSettings, mVDAnimation);
 	// Image sequence
 	CI_LOG_V("Assets folder: " + mVDUtils->getPath("").string());
 	mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDUtils->getPath("mandalas").string()));
@@ -57,7 +57,7 @@ void VideodrommControllerApp::setup()
 	// Shaders
 	mVDShaders = VDShaders::create(mVDSettings);
 	// Textures
-	mVDTextures = VDTextures::create(mVDSettings, mVDShaders);
+	mVDTextures = VDTextures::create(mVDSettings, mVDShaders, mVDAnimation);
 
 	//updateWindowTitle();
 	fpb = 16.0f;
@@ -351,7 +351,6 @@ void VideodrommControllerApp::update()
 	mVDImageSequences[0]->update();
 	mVDTextures->update();
 	mVDAudio->update();
-	mVDUtils->update();
 	mVDRouter->update();
 	updateWindowTitle();
 
@@ -513,15 +512,15 @@ void VideodrommControllerApp::drawControlWindow()
 		//			ui::Checkbox("Playing", &mVDSettings->mIsPlaying);
 		ui::SameLine();
 
-		ui::Text("Tempo %.2f ", mVDSettings->mTempo);
+		ui::Text("Tempo %.2f ", mVDAnimation->mTempo);
 		ui::SameLine();
 		if (ui::Button("Tap tempo")) { mVDAnimation->tapTempo(); }
 		ui::SameLine();
-		if (ui::Button("Time tempo")) { mVDSettings->mUseTimeWithTempo = !mVDSettings->mUseTimeWithTempo; }
+		if (ui::Button("Time tempo")) { mVDAnimation->mUseTimeWithTempo = !mVDAnimation->mUseTimeWithTempo; }
 		ui::SameLine();
 
 		//void Batchass::setTimeFactor(const int &aTimeFactor)
-		ui::SliderFloat("time x", &mVDSettings->iTimeFactor, 0.0001f, 32.0f, "%.1f");
+		ui::SliderFloat("time x", &mVDAnimation->iTimeFactor, 0.0001f, 32.0f, "%.1f");
 
 		static ImVector<float> timeValues; if (timeValues.empty()) { timeValues.resize(40); memset(&timeValues.front(), 0, timeValues.size()*sizeof(float)); }
 		static int timeValues_offset = 0;
@@ -1151,7 +1150,7 @@ void VideodrommControllerApp::drawControlWindow()
 			ui::SameLine();
 			if (ui::Button("x##exposure")) { mVDAnimation->resetExposure(); }
 			ui::SameLine();
-			if (ui::DragFloat("exposure", &mVDSettings->controlValues[ctrl], 0.1f, mVDAnimation->minExposure, mVDSettings->maxExposure))
+			if (ui::DragFloat("exposure", &mVDSettings->controlValues[ctrl], 0.1f, mVDAnimation->minExposure, mVDAnimation->maxExposure))
 			{
 				aParams << ",{\"name\" : " << ctrl << ",\"value\" : " << mVDSettings->controlValues[ctrl] << "}";
 			}
@@ -1219,7 +1218,7 @@ void VideodrommControllerApp::drawControlWindow()
 			// blend modes
 			if (ui::Button("x##blendmode")) { mVDSettings->iBlendMode = 0.0f; }
 			ui::SameLine();
-			ui::SliderInt("blendmode", &mVDSettings->iBlendMode, 0, mVDSettings->maxBlendMode);
+			ui::SliderInt("blendmode", &mVDSettings->iBlendMode, 0, mVDAnimation->maxBlendMode);
 
 			// steps
 			ctrl = 20;

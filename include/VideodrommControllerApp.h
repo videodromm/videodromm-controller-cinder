@@ -88,7 +88,9 @@ private:
 	// Textures
 	VDTexturesRef				mVDTextures;
 
+	// window mgmt
 	WindowRef					mControlWindow;
+	bool						mIsResizing;
 	// imgui
 	float						color[4];
 	float						backcolor[4];

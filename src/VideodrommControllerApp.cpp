@@ -59,12 +59,13 @@ void VideodrommControllerApp::setup()
 	// Textures
 	mVDTextures = VDTextures::create(mVDSettings, mVDShaders);
 
-	updateWindowTitle();
+	//updateWindowTitle();
 	fpb = 16.0f;
 	bpm = 142.0f;
 	float fps = bpm / 60.0f * fpb;
 	setFrameRate(fps);
 
+	mIsResizing = true;
 	mVDUtils->getWindowsResolution();
 	setWindowSize(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight);
 	setWindowPos(ivec2(mVDSettings->mRenderX, mVDSettings->mRenderY));
@@ -72,21 +73,20 @@ void VideodrommControllerApp::setup()
 	getWindow()->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawRenderWindow, this));
 	if (mVDSettings->mStandalone) {
 		// set ui window and io events callbacks
-		ui::connectWindow(getWindow());
+		//ui::connectWindow(getWindow());
 	}
 	else {
 		
 		mControlWindow = createWindow(Window::Format().size(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight));
-		//mControlWindow->setSize(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight);
-		mControlWindow->setPos(10, 10);
-		
+		mControlWindow->setPos(mVDSettings->mMainWindowX, mVDSettings->mMainWindowY);
+		mControlWindow->setBorderless();
 		mControlWindow->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawControlWindow, this));
 		mControlWindow->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
 		// set ui window and io events callbacks
-		ui::connectWindow(mControlWindow);
+		//ui::connectWindow(mControlWindow);
 
 	}
-	ui::initialize();
+	//ui::initialize();
 
 
 
@@ -204,6 +204,7 @@ void VideodrommControllerApp::cleanup()
 
 void VideodrommControllerApp::resizeWindow()
 {
+	mIsResizing = true;
 	if (mVDSettings->mStandalone) {
 		// set ui window and io events callbacks
 		ui::disconnectWindow(getWindow());
@@ -214,13 +215,7 @@ void VideodrommControllerApp::resizeWindow()
 
 	// tell the warps our window has been resized, so they properly scale up or down
 	Warp::handleResize(mWarps);
-	if (mVDSettings->mStandalone) {
-		// set ui window and io events callbacks
-		ui::connectWindow(getWindow());
-	}
-	else {
-		ui::connectWindow(mControlWindow);
-	}
+
 }
 
 void VideodrommControllerApp::mouseMove(MouseEvent event)
@@ -285,7 +280,7 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 				loadMovieFile(moviePath);
 			break;
 		case KeyEvent::KEY_r:
-			mMovie.reset();
+			if (mMovie) mMovie.reset();
 			break;
 		case KeyEvent::KEY_p:
 			if (mMovie) mMovie->play();
@@ -311,7 +306,7 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 			mVDAnimation->save();
 			break;
 		case KeyEvent::KEY_SPACE:
-			if (mMovie && mMovie->isPlaying()) mMovie->stop(); else mMovie->play();
+			if (mMovie) { if (mMovie->isPlaying()) mMovie->stop(); else mMovie->play(); }
 			break;
 		case KeyEvent::KEY_l:
 			mLoopVideo = !mLoopVideo;
@@ -352,6 +347,7 @@ void VideodrommControllerApp::update()
 {
 	mVDSettings->iFps = getAverageFps();
 	mVDSettings->sFps = toString(floor(mVDSettings->iFps));
+	mVDAnimation->update();
 	mVDImageSequences[0]->update();
 	mVDTextures->update();
 	mVDAudio->update();
@@ -444,6 +440,17 @@ void VideodrommControllerApp::drawRenderWindow()
 }
 void VideodrommControllerApp::drawControlWindow()
 {
+	if (mIsResizing) {
+		mIsResizing = false;
+		if (mVDSettings->mStandalone) {
+			// set ui window and io events callbacks 
+			ui::connectWindow(getWindow());
+		}
+		else {
+			ui::connectWindow(mControlWindow);
+		}
+		ui::initialize();
+	}
 	gl::clear();
 	gl::color(Color::white());
 

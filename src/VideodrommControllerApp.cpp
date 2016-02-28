@@ -100,8 +100,8 @@ void VideodrommControllerApp::setup()
 	mouseGlobal = false;
 	static float f = 0.0f;
 
-	showConsole = showGlobal = showTextures = showAudio = showMidi = showChannels = showShaders = true;
-	showTest = showTheme = showOSC = showFbos = false;
+	showConsole = showGlobal = showTextures = showAudio = showMidi = showChannels = showShaders = showOSC = showFbos = true;
+	showTest = showTheme = false;
 
 	// set ui window and io events callbacks
 	ui::connectWindow(getWindow());

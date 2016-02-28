@@ -50,7 +50,7 @@ void VideodrommControllerApp::setup()
 	mVDRouter = VDRouter::create(mVDSettings, mVDAnimation);
 	// Image sequence
 	CI_LOG_V("Assets folder: " + mVDUtils->getPath("").string());
-	mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDUtils->getPath("mandalas").string()));
+	mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDAnimation, mVDUtils->getPath("mandalas").string()));
 	// Audio
 	mVDAudio = VDAudio::create(mVDSettings);
 
@@ -507,6 +507,8 @@ void VideodrommControllerApp::drawControlWindow()
 		ui::SliderFloat("speed x", &mVDSettings->iSpeedMultiplier, 0.01f, 5.0f, "%.1f");
 		ui::SameLine();
 		ui::Text("Beat %d ", mVDSettings->iBeat);
+		ui::SameLine();
+		ui::Text("Bar %d ", mVDAnimation->iBar);
 		ui::SameLine();
 		ui::Text("Time %.2f", mVDSettings->iGlobalTime);
 		//			ui::Checkbox("Playing", &mVDSettings->mIsPlaying);

@@ -118,7 +118,6 @@
     <Xml Include="Debug\VDSettings.xml" />
     <Xml Include="Release\VDSettings.xml" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <ClInclude Include="..\..\..\Cinder\blocks\Cinder-Videodromm\include\VDAudio.h" />
     <ClInclude Include="..\..\..\Cinder\blocks\Cinder-Videodromm\include\VDFbo.h" />

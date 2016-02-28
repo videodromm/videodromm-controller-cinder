@@ -68,15 +68,36 @@ void VideodrommControllerApp::setup()
 	mVDUtils->getWindowsResolution();
 	setWindowSize(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight);
 	setWindowPos(ivec2(mVDSettings->mRenderX, mVDSettings->mRenderY));
+	getWindow()->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
+	getWindow()->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawRenderWindow, this));
+	if (mVDSettings->mStandalone) {
+		// set ui window and io events callbacks
+		ui::connectWindow(getWindow());
+	}
+	else {
+		
+		mControlWindow = createWindow(Window::Format().size(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight));
+		//mControlWindow->setSize(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight);
+		mControlWindow->setPos(10, 10);
+		
+		mControlWindow->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawControlWindow, this));
+		mControlWindow->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
+		// set ui window and io events callbacks
+		ui::connectWindow(mControlWindow);
+
+	}
+	ui::initialize();
+
+
 
 	// warping
 	gl::enableDepthRead();
 	gl::enableDepthWrite();
 	// initialize warps
-	mSettings = getAssetPath("") / mVDSettings->mAssetsPath / "warps.xml";
-	if (fs::exists(mSettings)) {
+	mWarpSettings = getAssetPath("") / mVDSettings->mAssetsPath / "warps.xml";
+	if (fs::exists(mWarpSettings)) {
 		// load warp settings from file if one exists
-		mWarps = Warp::readSettings(loadFile(mSettings));
+		mWarps = Warp::readSettings(loadFile(mWarpSettings));
 	}
 	else {
 		// otherwise create a warp from scratch
@@ -113,16 +134,14 @@ void VideodrommControllerApp::setup()
 	largeH = (mVDSettings->mPreviewFboHeight + margin) * 5;
 	largePreviewW = mVDSettings->mPreviewWidth + margin;
 	largePreviewH = (mVDSettings->mPreviewHeight + margin) * 2.4;
-	displayHeight = mVDSettings->mMainDisplayHeight - 50;
+	displayHeight = mVDSettings->mMainWindowHeight - 50;
 	mouseGlobal = false;
 	static float f = 0.0f;
 
 	//showConsole = showGlobal = showTextures = showAudio = showMidi = showChannels = showShaders = showOSC = showFbos = true;
 	showTest = false;
 
-	// set ui window and io events callbacks
-	ui::connectWindow(getWindow());
-	ui::initialize();
+
 #pragma region style
 	// our theme variables
 	ImGuiStyle& style = ui::GetStyle();
@@ -177,16 +196,31 @@ void VideodrommControllerApp::cleanup()
 {
 	CI_LOG_V("shutdown");
 	// save warp settings
-	Warp::writeSettings(mWarps, writeFile(mSettings));
+	Warp::writeSettings(mWarps, writeFile(mWarpSettings));
 	mVDSettings->save();
 	ui::Shutdown();
 	quit();
 }
 
-void VideodrommControllerApp::resize()
+void VideodrommControllerApp::resizeWindow()
 {
+	if (mVDSettings->mStandalone) {
+		// set ui window and io events callbacks
+		ui::disconnectWindow(getWindow());
+	}
+	else {
+		ui::disconnectWindow(mControlWindow);
+	}
+
 	// tell the warps our window has been resized, so they properly scale up or down
 	Warp::handleResize(mWarps);
+	if (mVDSettings->mStandalone) {
+		// set ui window and io events callbacks
+		ui::connectWindow(getWindow());
+	}
+	else {
+		ui::connectWindow(mControlWindow);
+	}
 }
 
 void VideodrommControllerApp::mouseMove(MouseEvent event)
@@ -277,7 +311,7 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 			mVDAnimation->save();
 			break;
 		case KeyEvent::KEY_SPACE:
-			if (mMovie->isPlaying()) mMovie->stop(); else mMovie->play();
+			if (mMovie && mMovie->isPlaying()) mMovie->stop(); else mMovie->play();
 			break;
 		case KeyEvent::KEY_l:
 			mLoopVideo = !mLoopVideo;
@@ -380,7 +414,12 @@ void VideodrommControllerApp::renderSceneToFbo()
 	if (mMovie->isPlaying()) mMovie->draw();
 	}*/
 }
-void VideodrommControllerApp::draw()
+void VideodrommControllerApp::drawUI()
+{
+	if (mVDSettings->mStandalone) {
+	}
+}
+void VideodrommControllerApp::drawRenderWindow()
 {
 	mVDTextures->draw();
 	// clear the window and set the drawing color to white
@@ -395,13 +434,19 @@ void VideodrommControllerApp::draw()
 			warp->draw(mVDTextures->getFboTexture(0), mVDTextures->getFboTexture(0)->getBounds());
 		}
 		else if (i == 1)  {
-			warp->draw(mVDImageSequences[0]->getTexture() , mVDTextures->getFboTexture(0)->getBounds());
+			warp->draw(mVDImageSequences[0]->getTexture(), mVDTextures->getFboTexture(0)->getBounds());
 		}
 		else if (i == 2)  {
 			warp->draw(mVDAudio->getTexture(), mVDTextures->getFboTexture(0)->getBounds());
 		}
 		i++;
 	}
+}
+void VideodrommControllerApp::drawControlWindow()
+{
+	gl::clear();
+	gl::color(Color::white());
+
 	// imgui
 	static int currentWindow = 0;
 
@@ -425,7 +470,7 @@ void VideodrommControllerApp::draw()
 		ImGui::RadioButton("Shaders", &currentWindow, 2); ImGui::SameLine();
 		ImGui::RadioButton("Osc", &currentWindow, 3); ImGui::SameLine();
 		ImGui::RadioButton("Midi", &currentWindow, 4); ImGui::SameLine();
-		ImGui::RadioButton("Channels", &currentWindow, 5); 
+		ImGui::RadioButton("Channels", &currentWindow, 5);
 
 		ui::SameLine();
 
@@ -594,89 +639,89 @@ void VideodrommControllerApp::draw()
 	case 0:
 		// textures
 #pragma region textures
-		
-			for (int i = 0; i < mVDTextures->getTextureCount(); i++)
+
+		for (int i = 0; i < mVDTextures->getTextureCount(); i++)
+		{
+			ui::SetNextWindowSize(ImVec2(w, h*1.4));
+			ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPos));
+			//ui::Begin(textureNames[i], NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+			ui::Begin(mVDTextures->getTextureName(i), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 			{
-				ui::SetNextWindowSize(ImVec2(w, h*1.4));
-				ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPos));
-				//ui::Begin(textureNames[i], NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-				ui::Begin(mVDTextures->getTextureName(i), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+				ui::PushID(i);
+				ui::Image((void*)mVDTextures->getTexture(i)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
+				ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
+				ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
+				ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
+				//BEGIN
+				sprintf_s(buf, "WS##s%d", i);
+				if (ui::Button(buf))
 				{
-					ui::PushID(i);
-					ui::Image((void*)mVDTextures->getTexture(i)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
-					ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
-					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
-					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
-					//BEGIN
-					sprintf_s(buf, "WS##s%d", i);
-					if (ui::Button(buf))
-					{
-						sprintf_s(buf, "IMG=%d.jpg", i);
-						//mBatchass->wsWrite(buf);
-					}
-					if (ui::IsItemHovered()) ui::SetTooltip("Send texture file name via WebSockets");
-					ui::SameLine();
-					sprintf_s(buf, "FV##s%d", i);
-					if (ui::Button(buf))
-					{
-						mVDTextures->flipTexture(i);
-					}
-					/*
-					if (mVDImageSequences[i]->isSequence(i)) {
-					if (!mVDImageSequences[i]->isLoadingFromDisk()) {
-					ui::SameLine();
-					sprintf_s(buf, "LD##s%d", i);
-					if (ui::Button(buf))
-					{
-					mVDImageSequences[i]->toggleLoadingFromDisk(i);
-					}
-					if (ui::IsItemHovered()) ui::SetTooltip("Pause loading from disk");
-					}
-					sprintf_s(buf, ">##s%d", i);
-					if (ui::Button(buf))
-					{
-					mVDImageSequences[i]->playSequence(i);
-					}
-					ui::SameLine();
-					sprintf_s(buf, "\"##s%d", i);
-					if (ui::Button(buf))
-					{
-					mVDImageSequences[i]->pauseSequence(i);
-					}
-					ui::SameLine();
-					sprintf_s(buf, "r##s%d", i);
-					if (ui::Button(buf))
-					{
-					mVDImageSequences[i]->reverseSequence(i);
-					}
-					ui::SameLine();
-					playheadPositions[i] = mVDImageSequences[i]->getPlayheadPosition(i);
-					sprintf_s(buf, "p%d##s%d", playheadPositions[i], i);
-					if (ui::Button(buf))
-					{
-					mVDImageSequences[i]->setPlayheadPosition(i, 0);
-					}
-
-					if (ui::SliderInt("scrub", &playheadPositions[i], 0, mVDImageSequences[i]->getMaxFrames(i)))
-					{
-					mVDImageSequences[i]->setPlayheadPosition(i, playheadPositions[i]);
-					}
-					speeds[i] = mVDImageSequences[i]->getSpeed(i);
-					if (ui::SliderFloat("speed", &speeds[i], 0.0f, 6.0f))
-					{
-					mVDImageSequences[i]->setSpeed(i, speeds[i]);
-					}
-
-					}*/
-
-					//END
-					ui::PopStyleColor(3);
-					ui::PopID();
+					sprintf_s(buf, "IMG=%d.jpg", i);
+					//mBatchass->wsWrite(buf);
 				}
-				ui::End();
-			}
+				if (ui::IsItemHovered()) ui::SetTooltip("Send texture file name via WebSockets");
+				ui::SameLine();
+				sprintf_s(buf, "FV##s%d", i);
+				if (ui::Button(buf))
+				{
+					mVDTextures->flipTexture(i);
+				}
+				/*
+				if (mVDImageSequences[i]->isSequence(i)) {
+				if (!mVDImageSequences[i]->isLoadingFromDisk()) {
+				ui::SameLine();
+				sprintf_s(buf, "LD##s%d", i);
+				if (ui::Button(buf))
+				{
+				mVDImageSequences[i]->toggleLoadingFromDisk(i);
+				}
+				if (ui::IsItemHovered()) ui::SetTooltip("Pause loading from disk");
+				}
+				sprintf_s(buf, ">##s%d", i);
+				if (ui::Button(buf))
+				{
+				mVDImageSequences[i]->playSequence(i);
+				}
+				ui::SameLine();
+				sprintf_s(buf, "\"##s%d", i);
+				if (ui::Button(buf))
+				{
+				mVDImageSequences[i]->pauseSequence(i);
+				}
+				ui::SameLine();
+				sprintf_s(buf, "r##s%d", i);
+				if (ui::Button(buf))
+				{
+				mVDImageSequences[i]->reverseSequence(i);
+				}
+				ui::SameLine();
+				playheadPositions[i] = mVDImageSequences[i]->getPlayheadPosition(i);
+				sprintf_s(buf, "p%d##s%d", playheadPositions[i], i);
+				if (ui::Button(buf))
+				{
+				mVDImageSequences[i]->setPlayheadPosition(i, 0);
+				}
 
-		
+				if (ui::SliderInt("scrub", &playheadPositions[i], 0, mVDImageSequences[i]->getMaxFrames(i)))
+				{
+				mVDImageSequences[i]->setPlayheadPosition(i, playheadPositions[i]);
+				}
+				speeds[i] = mVDImageSequences[i]->getSpeed(i);
+				if (ui::SliderFloat("speed", &speeds[i], 0.0f, 6.0f))
+				{
+				mVDImageSequences[i]->setSpeed(i, speeds[i]);
+				}
+
+				}*/
+
+				//END
+				ui::PopStyleColor(3);
+				ui::PopID();
+			}
+			ui::End();
+		}
+
+
 #pragma endregion textures
 		break;
 	case 1:
@@ -716,155 +761,155 @@ void VideodrommControllerApp::draw()
 
 #pragma region library
 
-			/*static ImGuiTextFilter filter;
-			ui::SetNextWindowSize(ImVec2(w, h));
-			ui::SetNextWindowPos(ImVec2(800, 240));
-			ui::Begin("Filter", NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-			{
-			ui::Text("Filter usage:\n"
-			"  \"\"         display all lines\n"
-			"  \"xxx\"      display lines containing \"xxx\"\n"
-			"  \"xxx,yyy\"  display lines containing \"xxx\" or \"yyy\"\n"
-			"  \"-xxx\"     hide lines containing \"xxx\"");
-			filter.Draw();
+		/*static ImGuiTextFilter filter;
+		ui::SetNextWindowSize(ImVec2(w, h));
+		ui::SetNextWindowPos(ImVec2(800, 240));
+		ui::Begin("Filter", NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+		{
+		ui::Text("Filter usage:\n"
+		"  \"\"         display all lines\n"
+		"  \"xxx\"      display lines containing \"xxx\"\n"
+		"  \"xxx,yyy\"  display lines containing \"xxx\" or \"yyy\"\n"
+		"  \"-xxx\"     hide lines containing \"xxx\"");
+		filter.Draw();
 
 
-			for (int i = 0; i < mVDShaders->getCount(); i++)
+		for (int i = 0; i < mVDShaders->getCount(); i++)
+		{
+		if (filter.PassFilter(mVDShaders->getShader(i).name.c_str()))
+		ui::BulletText("%s", mVDShaders->getShader(i).name.c_str());
+		}
+		}
+		ui::End();*/
+		xPos = margin;
+		for (int i = 0; i < mVDShaders->getCount(); i++)
+		{
+			//if (filter.PassFilter(mVDShaders->getShader(i).name.c_str()) && mVDShaders->getShader(i).active)
+			if (mVDShaders->getShader(i).active)
 			{
-			if (filter.PassFilter(mVDShaders->getShader(i).name.c_str()))
-			ui::BulletText("%s", mVDShaders->getShader(i).name.c_str());
-			}
-			}
-			ui::End();*/
-			xPos = margin;
-			for (int i = 0; i < mVDShaders->getCount(); i++)
-			{
-				//if (filter.PassFilter(mVDShaders->getShader(i).name.c_str()) && mVDShaders->getShader(i).active)
-				if (mVDShaders->getShader(i).active)
+				if (mVDSettings->iTrack == i) {
+					sprintf_s(buf, "SEL ##lsh%d", i);
+				}
+				else {
+					sprintf_s(buf, "%d##lsh%d", mVDShaders->getShader(i).microseconds, i);
+				}
+
+				ui::SetNextWindowSize(ImVec2(w, h));
+				ui::SetNextWindowPos(ImVec2(xPos + margin, yPos));
+				ui::Begin(buf, NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 				{
-					if (mVDSettings->iTrack == i) {
-						sprintf_s(buf, "SEL ##lsh%d", i);
-					}
-					else {
-						sprintf_s(buf, "%d##lsh%d", mVDShaders->getShader(i).microseconds, i);
-					}
-
-					ui::SetNextWindowSize(ImVec2(w, h));
-					ui::SetNextWindowPos(ImVec2(xPos + margin, yPos));
-					ui::Begin(buf, NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+					xPos += w + inBetween;
+					if (xPos > mVDSettings->MAX * w * 1.0)
 					{
-						xPos += w + inBetween;
-						if (xPos > mVDSettings->MAX * w * 1.0)
-						{
-							xPos = margin;
-							yPos += h + margin;
-						}
-						ui::PushID(i);
-						ui::Image((void*)mVDTextures->getShaderThumbTextureId(i), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
-						if (ui::IsItemHovered()) ui::SetTooltip(mVDShaders->getShader(i).name.c_str());
+						xPos = margin;
+						yPos += h + margin;
+					}
+					ui::PushID(i);
+					ui::Image((void*)mVDTextures->getShaderThumbTextureId(i), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
+					if (ui::IsItemHovered()) ui::SetTooltip(mVDShaders->getShader(i).name.c_str());
 
-						//ui::Columns(2, "lr", false);
-						// left
-						if (mVDSettings->mLeftFragIndex == i)
-						{
-							ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 1.0f, 0.5f));
-						}
-						else
-						{
-							ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 0.1f, 0.1f));
-
-						}
-						ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.0f, 0.7f, 0.7f));
-						ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.0f, 0.8f, 0.8f));
-						sprintf_s(buf, "L##s%d", i);
-						// TODO if (ui::Button(buf)) mBatchass->selectShader(true, i);
-						if (ui::IsItemHovered()) ui::SetTooltip("Set shader to left");
-						ui::PopStyleColor(3);
-						//ui::NextColumn();
-						ui::SameLine();
-						// right
-						if (mVDSettings->mRightFragIndex == i)
-						{
-							ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.3f, 1.0f, 0.5f));
-						}
-						else
-						{
-							ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 0.1f, 0.1f));
-						}
-						ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.3f, 0.7f, 0.7f));
-						ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.3f, 0.8f, 0.8f));
-						sprintf_s(buf, "R##s%d", i);
-						// TODO if (ui::Button(buf))  mBatchass->selectShader(false, i);
-						if (ui::IsItemHovered()) ui::SetTooltip("Set shader to right");
-						ui::PopStyleColor(3);
-						//ui::NextColumn();
-						ui::SameLine();
-						// preview
-						if (mVDSettings->mPreviewFragIndex == i)
-						{
-							ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.6f, 1.0f, 0.5f));
-						}
-						else
-						{
-							ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 0.1f, 0.1f));
-						}
-						ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.6f, 0.7f, 0.7f));
-						ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.6f, 0.8f, 0.8f));
-						sprintf_s(buf, "P##s%d", i);
-						if (ui::Button(buf)) mVDSettings->mPreviewFragIndex = i;
-						if (ui::IsItemHovered()) ui::SetTooltip("Preview shader");
-						ui::PopStyleColor(3);
-
-						// warp1
-						if (mVDSettings->mWarp1FragIndex == i)
-						{
-							ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.16f, 1.0f, 0.5f));
-						}
-						else
-						{
-							ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 0.1f, 0.1f));
-						}
-						ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.16f, 0.7f, 0.7f));
-						ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.16f, 0.8f, 0.8f));
-						sprintf_s(buf, "1##s%d", i);
-						if (ui::Button(buf)) mVDSettings->mWarp1FragIndex = i;
-						if (ui::IsItemHovered()) ui::SetTooltip("Set warp 1 shader");
-						ui::PopStyleColor(3);
-						ui::SameLine();
-
-						// warp2
-						if (mVDSettings->mWarp2FragIndex == i)
-						{
-							ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.77f, 1.0f, 0.5f));
-						}
-						else
-						{
-							ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 0.1f, 0.1f));
-						}
-						ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.77f, 0.7f, 0.7f));
-						ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.77f, 0.8f, 0.8f));
-						sprintf_s(buf, "2##s%d", i);
-						if (ui::Button(buf)) mVDSettings->mWarp2FragIndex = i;
-						if (ui::IsItemHovered()) ui::SetTooltip("Set warp 2 shader");
-						ui::PopStyleColor(3);
-
-						// enable removing shaders
-						if (i > 4)
-						{
-							ui::SameLine();
-							sprintf_s(buf, "X##s%d", i);
-							if (ui::Button(buf)) mVDShaders->removePixelFragmentShaderAtIndex(i);
-							if (ui::IsItemHovered()) ui::SetTooltip("Remove shader");
-						}
-
-						ui::PopID();
+					//ui::Columns(2, "lr", false);
+					// left
+					if (mVDSettings->mLeftFragIndex == i)
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 1.0f, 0.5f));
+					}
+					else
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 0.1f, 0.1f));
 
 					}
-					ui::End();
-				} // if filtered
+					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.0f, 0.7f, 0.7f));
+					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.0f, 0.8f, 0.8f));
+					sprintf_s(buf, "L##s%d", i);
+					// TODO if (ui::Button(buf)) mBatchass->selectShader(true, i);
+					if (ui::IsItemHovered()) ui::SetTooltip("Set shader to left");
+					ui::PopStyleColor(3);
+					//ui::NextColumn();
+					ui::SameLine();
+					// right
+					if (mVDSettings->mRightFragIndex == i)
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.3f, 1.0f, 0.5f));
+					}
+					else
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 0.1f, 0.1f));
+					}
+					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.3f, 0.7f, 0.7f));
+					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.3f, 0.8f, 0.8f));
+					sprintf_s(buf, "R##s%d", i);
+					// TODO if (ui::Button(buf))  mBatchass->selectShader(false, i);
+					if (ui::IsItemHovered()) ui::SetTooltip("Set shader to right");
+					ui::PopStyleColor(3);
+					//ui::NextColumn();
+					ui::SameLine();
+					// preview
+					if (mVDSettings->mPreviewFragIndex == i)
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.6f, 1.0f, 0.5f));
+					}
+					else
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 0.1f, 0.1f));
+					}
+					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.6f, 0.7f, 0.7f));
+					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.6f, 0.8f, 0.8f));
+					sprintf_s(buf, "P##s%d", i);
+					if (ui::Button(buf)) mVDSettings->mPreviewFragIndex = i;
+					if (ui::IsItemHovered()) ui::SetTooltip("Preview shader");
+					ui::PopStyleColor(3);
 
-			} // for
-	
+					// warp1
+					if (mVDSettings->mWarp1FragIndex == i)
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.16f, 1.0f, 0.5f));
+					}
+					else
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 0.1f, 0.1f));
+					}
+					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.16f, 0.7f, 0.7f));
+					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.16f, 0.8f, 0.8f));
+					sprintf_s(buf, "1##s%d", i);
+					if (ui::Button(buf)) mVDSettings->mWarp1FragIndex = i;
+					if (ui::IsItemHovered()) ui::SetTooltip("Set warp 1 shader");
+					ui::PopStyleColor(3);
+					ui::SameLine();
+
+					// warp2
+					if (mVDSettings->mWarp2FragIndex == i)
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.77f, 1.0f, 0.5f));
+					}
+					else
+					{
+						ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.0f, 0.1f, 0.1f));
+					}
+					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.77f, 0.7f, 0.7f));
+					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.77f, 0.8f, 0.8f));
+					sprintf_s(buf, "2##s%d", i);
+					if (ui::Button(buf)) mVDSettings->mWarp2FragIndex = i;
+					if (ui::IsItemHovered()) ui::SetTooltip("Set warp 2 shader");
+					ui::PopStyleColor(3);
+
+					// enable removing shaders
+					if (i > 4)
+					{
+						ui::SameLine();
+						sprintf_s(buf, "X##s%d", i);
+						if (ui::Button(buf)) mVDShaders->removePixelFragmentShaderAtIndex(i);
+						if (ui::IsItemHovered()) ui::SetTooltip("Remove shader");
+					}
+
+					ui::PopID();
+
+				}
+				ui::End();
+			} // if filtered
+
+		} // for
+
 #pragma endregion library
 		break;
 	case 3:
@@ -874,92 +919,92 @@ void VideodrommControllerApp::draw()
 		// Midi
 #pragma region MIDI
 
-			ui::SetNextWindowSize(ImVec2(largePreviewW + 20, largePreviewH), ImGuiSetCond_Once);
-			ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
-			ui::Begin("MIDI");
+		ui::SetNextWindowSize(ImVec2(largePreviewW + 20, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
+		ui::Begin("MIDI");
+		{
+			sprintf_s(buf, "Enable");
+			if (ui::Button(buf)) mVDRouter->midiSetup();
+			if (ui::CollapsingHeader("MidiIn", "20", true, true))
 			{
-				sprintf_s(buf, "Enable");
-				if (ui::Button(buf)) mVDRouter->midiSetup();
-				if (ui::CollapsingHeader("MidiIn", "20", true, true))
+				ui::Columns(2, "data", true);
+				ui::Text("Name"); ui::NextColumn();
+				ui::Text("Connect"); ui::NextColumn();
+				ui::Separator();
+
+				for (int i = 0; i < mVDRouter->getMidiInPortsCount(); i++)
 				{
-					ui::Columns(2, "data", true);
-					ui::Text("Name"); ui::NextColumn();
-					ui::Text("Connect"); ui::NextColumn();
-					ui::Separator();
+					ui::Text(mVDRouter->getMidiInPortName(i).c_str()); ui::NextColumn();
 
-					for (int i = 0; i < mVDRouter->getMidiInPortsCount(); i++)
+					if (mVDRouter->isMidiInConnected(i))
 					{
-						ui::Text(mVDRouter->getMidiInPortName(i).c_str()); ui::NextColumn();
+						sprintf_s(buf, "Disconnect %d", i);
+					}
+					else
+					{
+						sprintf_s(buf, "Connect %d", i);
+					}
 
+					if (ui::Button(buf))
+					{
 						if (mVDRouter->isMidiInConnected(i))
 						{
-							sprintf_s(buf, "Disconnect %d", i);
+							mVDRouter->closeMidiInPort(i);
 						}
 						else
 						{
-							sprintf_s(buf, "Connect %d", i);
+							mVDRouter->openMidiInPort(i);
 						}
-
-						if (ui::Button(buf))
-						{
-							if (mVDRouter->isMidiInConnected(i))
-							{
-								mVDRouter->closeMidiInPort(i);
-							}
-							else
-							{
-								mVDRouter->openMidiInPort(i);
-							}
-						}
-						ui::NextColumn();
-						ui::Separator();
 					}
-					ui::Columns(1);
+					ui::NextColumn();
+					ui::Separator();
 				}
+				ui::Columns(1);
 			}
-			ui::End();
+		}
+		ui::End();
 
 
-	
+
 #pragma endregion MIDI
 		break;
 	case 5:
 		// Channels
 #pragma region channels
-		
-			ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
-			ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
 
-			ui::Begin("Channels");
+		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
+
+		ui::Begin("Channels");
+		{
+			ui::Columns(3);
+			ui::SetColumnOffset(0, 4.0f);// int column_index, float offset)
+			ui::SetColumnOffset(1, 20.0f);// int column_index, float offset)
+			//ui::SetColumnOffset(2, 24.0f);// int column_index, float offset)
+			ui::Text("Chn"); ui::NextColumn();
+			ui::Text("Tex"); ui::NextColumn();
+			ui::Text("Name"); ui::NextColumn();
+			ui::Separator();
+			for (int i = 0; i < mVDSettings->MAX - 1; i++)
 			{
-				ui::Columns(3);
-				ui::SetColumnOffset(0, 4.0f);// int column_index, float offset)
-				ui::SetColumnOffset(1, 20.0f);// int column_index, float offset)
-				//ui::SetColumnOffset(2, 24.0f);// int column_index, float offset)
-				ui::Text("Chn"); ui::NextColumn();
-				ui::Text("Tex"); ui::NextColumn();
-				ui::Text("Name"); ui::NextColumn();
-				ui::Separator();
-				for (int i = 0; i < mVDSettings->MAX - 1; i++)
-				{
-					ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
-					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
-					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
-					ui::Text("c%d", i);
-					ui::NextColumn();
-					sprintf_s(buf, "%d", i);
-					if (ui::SliderInt(buf, &mVDSettings->iChannels[i], 0, mVDSettings->MAX - 1)) {
-					}
-					ui::NextColumn();
-					ui::PopStyleColor(3);
-					ui::Text("%s", mVDTextures->getTextureName(mVDSettings->iChannels[i]));
-					ui::NextColumn();
+				ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
+				ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
+				ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
+				ui::Text("c%d", i);
+				ui::NextColumn();
+				sprintf_s(buf, "%d", i);
+				if (ui::SliderInt(buf, &mVDSettings->iChannels[i], 0, mVDSettings->MAX - 1)) {
 				}
-				ui::Columns(1);
+				ui::NextColumn();
+				ui::PopStyleColor(3);
+				ui::Text("%s", mVDTextures->getTextureName(mVDSettings->iChannels[i]));
+				ui::NextColumn();
 			}
-			ui::End();
+			ui::Columns(1);
+		}
+		ui::End();
 
-	
+
 #pragma endregion channels
 
 		break;
@@ -1295,7 +1340,7 @@ void VideodrommControllerApp::draw()
 
 #pragma endregion Global
 
-	
+
 
 	// next line
 	xPos = margin;

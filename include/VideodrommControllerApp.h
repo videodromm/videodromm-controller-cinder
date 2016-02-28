@@ -48,10 +48,13 @@ public:
 	void setup() override;
 	void cleanup() override;
 	void update() override;
-	void draw() override;
+	void drawRenderWindow();
+	void drawControlWindow();
+	void drawUI();
 	void fileDrop(FileDropEvent event) override;
 
-	void resize() override;
+	//void resize() override;
+	void resizeWindow();
 
 	void mouseMove(MouseEvent event) override;
 	void mouseDown(MouseEvent event) override;
@@ -85,6 +88,7 @@ private:
 	// Textures
 	VDTexturesRef				mVDTextures;
 
+	WindowRef					mControlWindow;
 	// imgui
 	float						color[4];
 	float						backcolor[4];
@@ -117,7 +121,7 @@ private:
 	gl::TextureRef				mImage;
 	WarpList					mWarps;
 	Area						mSrcArea;
-	fs::path					mSettings;
+	fs::path					mWarpSettings;
 	// tempo 
 	float						bpm;
 	float						fpb;

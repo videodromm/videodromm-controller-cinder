@@ -50,7 +50,6 @@ public:
 	void update() override;
 	void drawRenderWindow();
 	void drawControlWindow();
-	void drawUI();
 	void fileDrop(FileDropEvent event) override;
 
 	//void resize() override;
@@ -129,5 +128,8 @@ private:
 	float						fpb;
 	// fbo
 	void						renderSceneToFbo();
+	gl::FboRef					mRenderFbo;
+	void						renderUIToFbo();
+	gl::FboRef					mUIFbo;
 
 };

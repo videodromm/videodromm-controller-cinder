@@ -264,6 +264,7 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 			if (mMovie) { if (mMovie->isPlaying()) mMovie->stop(); else mMovie->play(); }
 			break;
 		case KeyEvent::KEY_l:
+			mVDAnimation->load();
 			mLoopVideo = !mLoopVideo;
 			if (mMovie) mMovie->setLoop(mLoopVideo);
 			break;
@@ -641,8 +642,8 @@ void VideodrommControllerApp::renderUIToFbo()
 			if (ui::DragFloat("exposure", &mVDSettings->controlValues[ctrl], 0.1f, mVDAnimation->minExposure, mVDAnimation->maxExposure))
 			{
 				aParams << ",{\"name\" : " << ctrl << ",\"value\" : " << mVDSettings->controlValues[ctrl] << "}";
+				mVDAnimation->setExposure(mVDSettings->controlValues[ctrl]);
 			}
-
 			// zoom
 			ctrl = 22;
 			if (ui::Button("a##zoom"))
@@ -1335,7 +1336,7 @@ void VideodrommControllerApp::renderUIToFbo()
 	#pragma endregion warps
 	*/
 
-
+	gl::draw(mUIFbo->getColorTexture(), Rectf(128, 0, 256, 128));
 
 
 

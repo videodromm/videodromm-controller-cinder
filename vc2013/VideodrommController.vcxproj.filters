@@ -103,6 +103,9 @@
     <Filter Include="Release">
       <UniqueIdentifier>{8a9d2808-9d78-4050-b4c7-99137b0c089d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="assets">
+      <UniqueIdentifier>{55cad7b4-1cc0-454b-9534-e20993afdbe8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\VideodrommControllerApp.cpp">
@@ -357,5 +360,10 @@
     <Xml Include="Release\VDSettings.xml">
       <Filter>Release</Filter>
     </Xml>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\assets\live_params.json">
+      <Filter>assets</Filter>
+    </None>
   </ItemGroup>
 </Project>

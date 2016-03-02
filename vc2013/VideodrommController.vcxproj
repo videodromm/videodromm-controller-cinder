@@ -199,6 +199,9 @@
     <ClCompile Include="..\..\..\Cinder\blocks\OSC\src\Osc.cpp" />
     <ClCompile Include="..\..\..\Cinder\blocks\UnionJack\src\UnionJack.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\assets\live_params.json" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>

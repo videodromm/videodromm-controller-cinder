@@ -52,7 +52,7 @@ void VideodrommControllerApp::setup()
 	CI_LOG_V("Assets folder: " + mVDUtils->getPath("").string());
 	mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDAnimation, mVDUtils->getPath("mandalas").string()));
 	// Audio
-	mVDAudio = VDAudio::create(mVDSettings);
+	mVDAudio = VDAudio::create(mVDSettings); // TODO check for line in presence RTE otherwise
 
 	// Shaders
 	mVDShaders = VDShaders::create(mVDSettings);

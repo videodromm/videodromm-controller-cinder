@@ -74,7 +74,7 @@ void VideodrommControllerApp::setup()
 	// render fbo
 	gl::Fbo::Format format;
 	//format.setSamples( 4 ); // uncomment this to enable 4x antialiasing
-	mRenderFbo = gl::Fbo::create(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, format.depthTexture());
+	mRenderFbo = gl::Fbo::create(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, format.colorTexture());
 	if (mVDSettings->mStandalone) {
 		// set ui window and io events callbacks
 		//ui::connectWindow(getWindow());
@@ -89,7 +89,7 @@ void VideodrommControllerApp::setup()
 		// set ui window and io events callbacks
 		//ui::connectWindow(mControlWindow);
 		// UI fbo
-		mUIFbo = gl::Fbo::create(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight, format.depthTexture());
+		mUIFbo = gl::Fbo::create(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight, format.colorTexture());
 
 	}
 	//ui::initialize();

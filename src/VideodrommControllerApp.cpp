@@ -685,11 +685,11 @@ void VideodrommControllerApp::renderUIToFbo()
 				aParams << ",{\"name\" : " << ctrl << ",\"value\" : " << mVDSettings->controlValues[ctrl] << "}";
 			}
 			// badTv
-			if (ui::Button("x##badtv")) { mVDSettings->iBadTv = 0.0f; }
+			/*if (ui::Button("x##badtv")) { mVDSettings->iBadTv = 0.0f; }
 			ui::SameLine();
 			if (ui::SliderFloat("badTv/min/max", &mVDSettings->iBadTv, 0.0f, 5.0f))
 			{
-			}
+			}*/
 			// param1
 			if (ui::Button("x##param1")) { mVDSettings->iParam1 = 1.0f; }
 			ui::SameLine();

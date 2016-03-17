@@ -45,9 +45,9 @@ void VideodrommControllerApp::setup()
 	// Utils
 	mVDUtils = VDUtils::create(mVDSettings);
 	// Animation
-	mVDAnimation = VDAnimation::create(mVDSettings);
+	mVDAnimation = VDAnimation::create(mVDSettings,mVDSession);
 	// Message router
-	mVDRouter = VDRouter::create(mVDSettings, mVDAnimation);
+	mVDRouter = VDRouter::create(mVDSettings, mVDAnimation,mVDSession);
 	// Image sequence
 	CI_LOG_V("Assets folder: " + mVDUtils->getPath("").string());
 	mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDAnimation, mVDUtils->getPath("mandalas").string()));
@@ -459,7 +459,7 @@ void VideodrommControllerApp::renderUIToFbo()
 		//			ui::Checkbox("Playing", &mVDSettings->mIsPlaying);
 		ui::SameLine();
 
-		ui::Text("Tempo %.2f ", mVDAnimation->mTempo);
+		//ui::Text("Tempo %.2f ", mVDAnimation->mTempo);
 		ui::SameLine();
 		if (ui::Button("Tap tempo")) { mVDAnimation->tapTempo(); }
 		ui::SameLine();

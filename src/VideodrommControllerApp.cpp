@@ -45,12 +45,21 @@ void VideodrommControllerApp::setup()
 	// Utils
 	mVDUtils = VDUtils::create(mVDSettings);
 	// Animation
-	mVDAnimation = VDAnimation::create(mVDSettings,mVDSession);
+	mVDAnimation = VDAnimation::create(mVDSettings, mVDSession);
 	// Message router
-	mVDRouter = VDRouter::create(mVDSettings, mVDAnimation,mVDSession);
+	mVDRouter = VDRouter::create(mVDSettings, mVDAnimation, mVDSession);
 	// Image sequence
 	CI_LOG_V("Assets folder: " + mVDUtils->getPath("").string());
-	mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDAnimation, mVDUtils->getPath("fullseq").string()));
+	string imgSeqPath = mVDSession->getImageSequencePath();
+	// only load image sequence from subfolder in assets folder
+	if (imgSeqPath.length() > 0) {
+		fs::path mPath = getAssetPath("") / imgSeqPath;
+		// tests for valid path 
+		if (fs::exists(mPath)) {
+			mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDAnimation, mPath.string()));
+		}
+	}
+
 	// Audio
 	mVDAudio = VDAudio::create(mVDSettings); // TODO check for line in presence RTE otherwise
 
@@ -59,11 +68,7 @@ void VideodrommControllerApp::setup()
 	// Textures
 	mVDTextures = VDTextures::create(mVDSettings, mVDShaders, mVDAnimation);
 
-	//updateWindowTitle();
-	fpb = 16.0f;
-	bpm = 142.0f;
-	float fps = bpm / 60.0f * fpb;
-	setFrameRate(fps);
+	setFrameRate(mVDSession->getTargetFps());
 	mFadeInDelay = true;
 	mIsResizing = true;
 	mVDUtils->getWindowsResolution();
@@ -237,21 +242,30 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 			break;
 		case KeyEvent::KEY_p:
 			if (mMovie) mMovie->play();
-			mVDImageSequences[0]->playSequence();
+			for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
+			{
+				mVDImageSequences[i]->playSequence();
+			}
 			break;
 		case KeyEvent::KEY_LEFT:
-			mVDImageSequences[0]->pauseSequence();
-			mVDSettings->iBeat--;
-			// Seek to a new position in the sequence
-			mImageSequencePosition = mVDImageSequences[0]->getPlayheadPosition();
-			mVDImageSequences[0]->setPlayheadPosition(--mImageSequencePosition);
+			for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
+			{
+				mVDImageSequences[i]->pauseSequence();
+				mVDSettings->iBeat--;
+				// Seek to a new position in the sequence
+				mImageSequencePosition = mVDImageSequences[i]->getPlayheadPosition();
+				mVDImageSequences[i]->setPlayheadPosition(--mImageSequencePosition);
+			}
 			break;
 		case KeyEvent::KEY_RIGHT:
-			mVDImageSequences[0]->pauseSequence();
-			mVDSettings->iBeat++;
-			// Seek to a new position in the sequence
-			mImageSequencePosition = mVDImageSequences[0]->getPlayheadPosition();
-			mVDImageSequences[0]->setPlayheadPosition(++mImageSequencePosition);
+			for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
+			{
+				mVDImageSequences[i]->pauseSequence();
+				mVDSettings->iBeat++;
+				// Seek to a new position in the sequence
+				mImageSequencePosition = mVDImageSequences[i]->getPlayheadPosition();
+				mVDImageSequences[i]->setPlayheadPosition(++mImageSequencePosition);
+			}
 			break;
 
 		case KeyEvent::KEY_s:
@@ -302,7 +316,10 @@ void VideodrommControllerApp::update()
 	mVDSettings->iFps = getAverageFps();
 	mVDSettings->sFps = toString(floor(mVDSettings->iFps));
 	mVDAnimation->update();
-	mVDImageSequences[0]->update();
+	for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
+	{
+		mVDImageSequences[i]->update();
+	}
 	mVDTextures->update();
 	mVDAudio->update();
 	mVDRouter->update();
@@ -377,12 +394,16 @@ void VideodrommControllerApp::renderSceneToFbo()
 	for (auto &warp : mWarps) {
 		/*if (i == 0) {
 			warp->draw(mVDTextures->getFboTexture(0), mVDTextures->getFboTexture(0)->getBounds());
+			}
+			else if (i == 1)  {*/
+		for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
+		{
+
+			warp->draw(mVDImageSequences[i]->getTexture(), mVDTextures->getFboTexture(0)->getBounds());
 		}
-		else if (i == 1)  {*/
-			warp->draw(mVDImageSequences[0]->getTexture(), mVDTextures->getFboTexture(0)->getBounds());
 		/*}
 		else if (i == 2)  {
-			warp->draw(mUIFbo->getColorTexture(), mUIFbo->getColorTexture()->getBounds());
+		warp->draw(mUIFbo->getColorTexture(), mUIFbo->getColorTexture()->getBounds());
 		}
 		i++;*/
 	}
@@ -858,9 +879,13 @@ void VideodrommControllerApp::renderUIToFbo()
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
 
 		sprintf_s(buf, "FV##left%d", 40);
-		//ui::Image((void*)mVDTextures->getFboTextureId(0), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
-		ui::Image((void*)mVDImageSequences[0]->getTexture()->getId(), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
-
+		//
+		if (mVDImageSequences.size() > 0) {
+			ui::Image((void*)mVDImageSequences[0]->getTexture()->getId(), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
+		}
+		else {
+			ui::Image((void*)mVDTextures->getFboTextureId(0), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
+		}
 		ui::PopStyleColor(3);
 		ui::PopItemWidth();
 	}
@@ -1428,7 +1453,7 @@ void VideodrommControllerApp::updateWindowTitle()
 // performance improvement. This value defaults to 4 (AA_MSAA_4) on iOS and 16 (AA_MSAA_16)
 // on the Desktop.
 #if defined( CINDER_COCOA_TOUCH )
-CINDER_APP( VideodrommControllerApp, RendererGl(RendererGl::AA_NONE) )
+CINDER_APP(VideodrommControllerApp, RendererGl(RendererGl::AA_NONE))
 #else
 CINDER_APP(VideodrommControllerApp, RendererGl(RendererGl::Options().msaa(8)), &VideodrommControllerApp::prepare)
 #endif

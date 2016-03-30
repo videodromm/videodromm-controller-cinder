@@ -371,5 +371,8 @@
     <None Include="..\..\assets\live_params.json">
       <Filter>assets</Filter>
     </None>
+    <None Include="..\..\assets\session.json">
+      <Filter>assets</Filter>
+    </None>
   </ItemGroup>
 </Project>

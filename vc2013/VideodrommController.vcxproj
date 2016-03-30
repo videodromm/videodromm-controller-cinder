@@ -203,6 +203,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\assets\live_params.json" />
+    <None Include="..\..\assets\session.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

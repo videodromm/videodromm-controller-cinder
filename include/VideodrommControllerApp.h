@@ -123,9 +123,6 @@ private:
 	WarpList					mWarps;
 	Area						mSrcArea;
 	fs::path					mWarpSettings;
-	// tempo 
-	float						bpm;
-	float						fpb;
 	// fbo
 	void						renderSceneToFbo();
 	gl::FboRef					mRenderFbo;

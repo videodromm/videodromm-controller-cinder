@@ -62,7 +62,6 @@ void VideodrommControllerApp::setup()
 
 	// Audio
 	mVDAudio = VDAudio::create(mVDSettings); // TODO check for line in presence RTE otherwise
-
 	// Shaders
 	mVDShaders = VDShaders::create(mVDSettings);
 	// Textures
@@ -72,8 +71,7 @@ void VideodrommControllerApp::setup()
 	mFadeInDelay = true;
 	mIsResizing = true;
 	mVDUtils->getWindowsResolution();
-	//setWindowSize(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight);
-	//setWindowPos(ivec2(mVDSettings->mRenderX, mVDSettings->mRenderY));
+
 	getWindow()->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
 	getWindow()->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawRenderWindow, this));
 	// render fbo
@@ -81,8 +79,7 @@ void VideodrommControllerApp::setup()
 	//format.setSamples( 4 ); // uncomment this to enable 4x antialiasing
 	mRenderFbo = gl::Fbo::create(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, format.colorTexture());
 	if (mVDSettings->mStandalone) {
-		// set ui window and io events callbacks
-		//ui::connectWindow(getWindow());
+
 	}
 	else {
 
@@ -91,13 +88,11 @@ void VideodrommControllerApp::setup()
 		mControlWindow->setBorderless();
 		mControlWindow->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawControlWindow, this));
 		mControlWindow->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
-		// set ui window and io events callbacks
-		//ui::connectWindow(mControlWindow);
+
 		// UI fbo
 		mUIFbo = gl::Fbo::create(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight, format.colorTexture());
 
 	}
-	//ui::initialize();
 
 	// warping
 	gl::enableDepthRead();
@@ -144,9 +139,6 @@ void VideodrommControllerApp::setup()
 	displayHeight = mVDSettings->mMainWindowHeight - 50;
 	mouseGlobal = false;
 	static float f = 0.0f;
-
-	//showConsole = showGlobal = showTextures = showAudio = showMidi = showChannels = showShaders = showOSC = showFbos = true;
-	showTest = false;
 
 	mVDAnimation->tapTempo();
 }
@@ -377,7 +369,7 @@ void VideodrommControllerApp::renderSceneToFbo()
 	// on non-OpenGL ES platforms, you can just call mFbo->unbindFramebuffer() at the end of the function
 	// but this will restore the "screen" FBO on OpenGL ES, and does the right thing on both platforms
 	gl::ScopedFramebuffer fbScp(mRenderFbo);
-	gl::clear(mVDAnimation->getBackgroundColor(), true);//mBlack
+	gl::clear(Color::black());
 	// setup the viewport to match the dimensions of the FBO
 	gl::ScopedViewport scpVp(ivec2(0), mRenderFbo->getSize());
 	if (mMovie) {
@@ -398,8 +390,7 @@ void VideodrommControllerApp::renderSceneToFbo()
 			else if (i == 1)  {*/
 		for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
 		{
-
-			warp->draw(mVDImageSequences[i]->getTexture(), mVDTextures->getFboTexture(0)->getBounds());
+			warp->draw(mVDImageSequences[i]->getTexture(), mVDImageSequences[i]->getTexture()->getBounds());
 		}
 		/*}
 		else if (i == 2)  {
@@ -956,7 +947,7 @@ void VideodrommControllerApp::renderUIToFbo()
 			ui::SetNextWindowSize(ImVec2(w, h*1.4));
 			ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPos));
 			//ui::Begin(textureNames[i], NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-			ui::Begin(mVDTextures->getTextureName(i), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+			ui::Begin(mVDTextures->getTextureName(i).c_str(), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 			{
 				ui::PushID(i);
 				ui::Image((void*)mVDTextures->getTexture(i)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
@@ -964,14 +955,14 @@ void VideodrommControllerApp::renderUIToFbo()
 				ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
 				ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
 				//BEGIN
-				sprintf_s(buf, "WS##s%d", i);
+				/*sprintf_s(buf, "WS##s%d", i);
 				if (ui::Button(buf))
 				{
 					sprintf_s(buf, "IMG=%d.jpg", i);
 					//mBatchass->wsWrite(buf);
 				}
 				if (ui::IsItemHovered()) ui::SetTooltip("Send texture file name via WebSockets");
-				ui::SameLine();
+				ui::SameLine();*/
 				sprintf_s(buf, "FV##s%d", i);
 				if (ui::Button(buf))
 				{
@@ -1041,12 +1032,11 @@ void VideodrommControllerApp::renderUIToFbo()
 #pragma region fbos
 		mVDSettings->mRenderThumbs = true;
 
-
 		for (int i = 0; i < mVDTextures->getFboCount(); i++)
 		{
 			ui::SetNextWindowSize(ImVec2(w, h));
 			ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPos));
-			ui::Begin(mVDTextures->getFboName(i), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+			ui::Begin(mVDTextures->getTextureName(i).c_str(), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 			{
 
 				//ui::PushID(i);
@@ -1118,7 +1108,7 @@ void VideodrommControllerApp::renderUIToFbo()
 						yPos += h + margin;
 					}
 					ui::PushID(i);
-					ui::Image((void*)mVDTextures->getShaderThumbTextureId(i), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
+					ui::Image((void*)mVDTextures->getFboTextureId(i), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
 					if (ui::IsItemHovered()) ui::SetTooltip(mVDShaders->getShader(i).name.c_str());
 
 					//ui::Columns(2, "lr", false);
@@ -1331,12 +1321,7 @@ void VideodrommControllerApp::renderUIToFbo()
 	// next line
 	xPos = margin;
 	yPos += largePreviewH + margin;
-	if (showTest)
-	{
-		ui::ShowTestWindow();
-		ui::ShowStyleEditor();
 
-	}
 	/*
 	#pragma region warps
 	if (mVDSettings->mMode == MODE_WARP)
@@ -1439,6 +1424,7 @@ void VideodrommControllerApp::drawControlWindow()
 
 	}
 	renderUIToFbo();
+	gl::clear(Color::black());
 	gl::draw(mUIFbo->getColorTexture(), Rectf(128, 0, 256, 128)); // TODO CHECK
 
 

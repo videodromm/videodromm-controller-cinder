@@ -29,7 +29,7 @@ fps = 142 / 60 * 4 = 9.46
 */
 void VideodrommControllerApp::prepare(Settings *settings)
 {
-	settings->setWindowSize(1440, 900);
+	settings->setWindowSize(40, 10);
 }
 void VideodrommControllerApp::setup()
 {
@@ -50,7 +50,7 @@ void VideodrommControllerApp::setup()
 	mVDRouter = VDRouter::create(mVDSettings, mVDAnimation,mVDSession);
 	// Image sequence
 	CI_LOG_V("Assets folder: " + mVDUtils->getPath("").string());
-	mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDAnimation, mVDUtils->getPath("mandalas").string()));
+	mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDAnimation, mVDUtils->getPath("fullseq").string()));
 	// Audio
 	mVDAudio = VDAudio::create(mVDSettings); // TODO check for line in presence RTE otherwise
 
@@ -64,11 +64,11 @@ void VideodrommControllerApp::setup()
 	bpm = 142.0f;
 	float fps = bpm / 60.0f * fpb;
 	setFrameRate(fps);
-
+	mFadeInDelay = true;
 	mIsResizing = true;
 	mVDUtils->getWindowsResolution();
-	setWindowSize(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight);
-	setWindowPos(ivec2(mVDSettings->mRenderX, mVDSettings->mRenderY));
+	//setWindowSize(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight);
+	//setWindowPos(ivec2(mVDSettings->mRenderX, mVDSettings->mRenderY));
 	getWindow()->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
 	getWindow()->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawRenderWindow, this));
 	// render fbo
@@ -105,8 +105,6 @@ void VideodrommControllerApp::setup()
 	}
 	else {
 		// otherwise create a warp from scratch
-		mWarps.push_back(WarpPerspectiveBilinear::create());
-		mWarps.push_back(WarpPerspectiveBilinear::create());
 		mWarps.push_back(WarpPerspectiveBilinear::create());
 	}
 
@@ -368,31 +366,40 @@ void VideodrommControllerApp::renderSceneToFbo()
 	if (mMovie) {
 		if (mMovie->isPlaying()) mMovie->draw();
 	}
-	mVDTextures->draw();
+	//mVDTextures->draw();
 	// clear the window and set the drawing color to white
 	//gl::clear();
 	//gl::color(Color::white());
 	//gl::setMatricesWindow(mVDSettings->mFboWidth * mVDSettings->mUIRefresh, mVDSettings->mFboHeight * mVDSettings->mUIRefresh);
 
-	int i = 0;
+	//int i = 0;
 	// iterate over the warps and draw their content
 	for (auto &warp : mWarps) {
-		if (i == 0) {
+		/*if (i == 0) {
 			warp->draw(mVDTextures->getFboTexture(0), mVDTextures->getFboTexture(0)->getBounds());
 		}
-		else if (i == 1)  {
+		else if (i == 1)  {*/
 			warp->draw(mVDImageSequences[0]->getTexture(), mVDTextures->getFboTexture(0)->getBounds());
-		}
+		/*}
 		else if (i == 2)  {
 			warp->draw(mUIFbo->getColorTexture(), mUIFbo->getColorTexture()->getBounds());
 		}
-		i++;
+		i++;*/
 	}
 }
 void VideodrommControllerApp::drawRenderWindow()
 {
 	renderSceneToFbo();
-	gl::draw(mRenderFbo->getColorTexture(), Rectf(128, 0, 256, 128)); // TODO check this rect!getDepthTexture
+	if (mFadeInDelay) {
+		if (getElapsedFrames() > mVDSession->getFadeInDelay()) {
+			mFadeInDelay = false;
+			setWindowSize(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight);
+			setWindowPos(ivec2(mVDSettings->mRenderX, mVDSettings->mRenderY));
+			timeline().apply(&mVDSettings->iAlpha, 0.0f, 1.0f, 1.5f, EaseInCubic());
+		}
+	}
+	gl::clear(Color::black());
+	gl::draw(mRenderFbo->getColorTexture());// , Rectf(128, 0, 256, 128)); // TODO check this rect!getDepthTexture
 }
 // Render the UI into the FBO
 void VideodrommControllerApp::renderUIToFbo()
@@ -427,7 +434,7 @@ void VideodrommControllerApp::renderUIToFbo()
 		ImGui::RadioButton("Shaders", &currentWindow, 2); ImGui::SameLine();
 		ImGui::RadioButton("Osc", &currentWindow, 3); ImGui::SameLine();
 		ImGui::RadioButton("Midi", &currentWindow, 4); ImGui::SameLine();
-		ImGui::RadioButton("Channels", &currentWindow, 5); ui::SameLine();
+		ImGui::RadioButton("Chn", &currentWindow, 5); ui::SameLine();
 
 		if (ui::Button("Save Params"))
 		{
@@ -438,13 +445,9 @@ void VideodrommControllerApp::renderUIToFbo()
 		}
 		ui::SameLine();
 
-		mVDSettings->iDebug ^= ui::Button("Debug");
-		ui::SameLine();
-		if (ui::Button("Stop Loading")) mVDImageSequences[0]->stopLoading();
+		if (ui::Button("Stop Load")) mVDImageSequences[0]->stopLoading();
 #pragma region Audio
 
-		ui::SameLine();
-		ui::Text("Track %s %.2f", mVDSettings->mTrackName.c_str(), mVDSettings->liveMeter);
 		ui::SameLine();
 		ui::Text("Msg: %s", mVDSettings->mMsg.c_str());
 		if (ui::Button("x##spdx")) { mVDSettings->iSpeedMultiplier = 1.0; }
@@ -456,7 +459,11 @@ void VideodrommControllerApp::renderUIToFbo()
 		ui::Text("Bar %d ", mVDAnimation->iBar);
 		ui::SameLine();
 		ui::Text("Time %.2f", mVDSettings->iGlobalTime);
+		ui::SameLine();
+		ui::Text("Trk %s %.2f", mVDSettings->mTrackName.c_str(), mVDSettings->liveMeter);
 		//			ui::Checkbox("Playing", &mVDSettings->mIsPlaying);
+		ui::SameLine();
+		mVDSettings->iDebug ^= ui::Button("Debug");
 		ui::SameLine();
 
 		//ui::Text("Tempo %.2f ", mVDAnimation->mTempo);
@@ -851,7 +858,8 @@ void VideodrommControllerApp::renderUIToFbo()
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
 
 		sprintf_s(buf, "FV##left%d", 40);
-		ui::Image((void*)mVDTextures->getFboTextureId(0), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
+		//ui::Image((void*)mVDTextures->getFboTextureId(0), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
+		ui::Image((void*)mVDImageSequences[0]->getTexture()->getId(), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
 
 		ui::PopStyleColor(3);
 		ui::PopItemWidth();

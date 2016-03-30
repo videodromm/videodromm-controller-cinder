@@ -131,5 +131,6 @@ private:
 	gl::FboRef					mRenderFbo;
 	void						renderUIToFbo();
 	gl::FboRef					mUIFbo;
+	bool						mFadeInDelay;
 
 };

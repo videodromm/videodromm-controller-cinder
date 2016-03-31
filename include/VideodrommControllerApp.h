@@ -26,6 +26,8 @@
 #include "VDShaders.h"
 // Audio
 #include "VDAudio.h"
+// fbo
+//#include "VDFbo.h"
 // UnionJack
 #include "UnionJack.h"
 // spout
@@ -86,7 +88,8 @@ private:
 	VDShadersRef				mVDShaders;
 	// Textures
 	VDTexturesRef				mVDTextures;
-
+	// Fbos
+	//vector<VDFboRef>			mVDFbos;
 	// window mgmt
 	WindowRef					mControlWindow;
 	bool						mIsResizing;

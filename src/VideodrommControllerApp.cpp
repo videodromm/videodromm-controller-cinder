@@ -83,7 +83,8 @@ void VideodrommControllerApp::setup()
 	}
 	else {
 
-		mControlWindow = createWindow(Window::Format().size(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight));
+		// OK mControlWindow = createWindow(Window::Format().size(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight));
+		mControlWindow = createWindow(Window::Format().size(640, 400));
 		mControlWindow->setPos(mVDSettings->mMainWindowX, mVDSettings->mMainWindowY);
 		mControlWindow->setBorderless();
 		mControlWindow->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawControlWindow, this));
@@ -381,22 +382,20 @@ void VideodrommControllerApp::renderSceneToFbo()
 	//gl::color(Color::white());
 	//gl::setMatricesWindow(mVDSettings->mFboWidth * mVDSettings->mUIRefresh, mVDSettings->mFboHeight * mVDSettings->mUIRefresh);
 
-	//int i = 0;
+	if (mVDImageSequences.size() > 0) mVDTextures->setFboTexture(mVDImageSequences[0]->getTexture());
+
+	int i = 0;
 	// iterate over the warps and draw their content
 	for (auto &warp : mWarps) {
-		/*if (i == 0) {
-			warp->draw(mVDTextures->getFboTexture(0), mVDTextures->getFboTexture(0)->getBounds());
+		if (i == 0) {
+			for (unsigned int j = 0; j < mVDImageSequences.size(); j++) {
+				warp->draw(mVDImageSequences[j]->getTexture(), mVDImageSequences[j]->getTexture()->getBounds());
 			}
-			else if (i == 1)  {*/
-		for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
-		{
-			warp->draw(mVDImageSequences[i]->getTexture(), mVDImageSequences[i]->getTexture()->getBounds());
 		}
-		/*}
-		else if (i == 2)  {
-		warp->draw(mUIFbo->getColorTexture(), mUIFbo->getColorTexture()->getBounds());
+		else   {
+			warp->draw(mVDTextures->getFboTexture(i - 1), mVDTextures->getFboTexture(0)->getBounds());
 		}
-		i++;*/
+		i++;
 	}
 }
 void VideodrommControllerApp::drawRenderWindow()
@@ -942,7 +941,7 @@ void VideodrommControllerApp::renderUIToFbo()
 
 #pragma region textures
 
-		for (int i = 0; i < mVDTextures->getTextureCount(); i++)
+		for (int i = 0; i < mVDTextures->getFboCount(); i++)
 		{
 			ui::SetNextWindowSize(ImVec2(w, h*1.4));
 			ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPos));
@@ -958,8 +957,8 @@ void VideodrommControllerApp::renderUIToFbo()
 				/*sprintf_s(buf, "WS##s%d", i);
 				if (ui::Button(buf))
 				{
-					sprintf_s(buf, "IMG=%d.jpg", i);
-					//mBatchass->wsWrite(buf);
+				sprintf_s(buf, "IMG=%d.jpg", i);
+				//mBatchass->wsWrite(buf);
 				}
 				if (ui::IsItemHovered()) ui::SetTooltip("Send texture file name via WebSockets");
 				ui::SameLine();*/
@@ -1354,7 +1353,7 @@ void VideodrommControllerApp::renderUIToFbo()
 	#pragma endregion warps
 	*/
 
-	gl::draw(mUIFbo->getColorTexture(), Rectf(128, 0, 256, 128));
+	gl::draw(mUIFbo->getColorTexture());
 
 
 

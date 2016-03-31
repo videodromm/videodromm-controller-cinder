@@ -374,5 +374,8 @@
     <None Include="..\..\assets\session.json">
       <Filter>assets</Filter>
     </None>
+    <None Include="..\..\assets\10.glsl">
+      <Filter>assets</Filter>
+    </None>
   </ItemGroup>
 </Project>

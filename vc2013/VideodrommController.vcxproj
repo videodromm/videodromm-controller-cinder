@@ -202,6 +202,7 @@
     <ClCompile Include="..\..\..\Cinder\blocks\UnionJack\src\UnionJack.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\assets\10.glsl" />
     <None Include="..\..\assets\live_params.json" />
     <None Include="..\..\assets\session.json" />
   </ItemGroup>

@@ -962,7 +962,7 @@ void VideodrommControllerApp::renderUIToFbo()
 				}
 				if (ui::IsItemHovered()) ui::SetTooltip("Send texture file name via WebSockets");
 				ui::SameLine();*/
-				sprintf_s(buf, "FV##s%d", i);
+				sprintf(buf, "FV##s%d", i);
 				if (ui::Button(buf))
 				{
 					mVDTextures->flipTexture(i);

@@ -945,7 +945,7 @@ void VideodrommControllerApp::renderUIToFbo()
 
 #pragma region textures
 
-		for (int i = 0; i < mVDTextures->getFboCount(); i++)
+		for (int i = 0; i < mVDTextures->getInputTexturesCount(); i++)
 		{
 			ui::SetNextWindowSize(ImVec2(w, h*1.4));
 			ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPos));
@@ -953,7 +953,7 @@ void VideodrommControllerApp::renderUIToFbo()
 			ui::Begin(mVDTextures->getTextureName(i).c_str(), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 			{
 				ui::PushID(i);
-				ui::Image((void*)mVDTextures->getTexture(i)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
+				ui::Image((void*)mVDTextures->getInputTexture(i)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
 				ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
 				ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
 				ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));

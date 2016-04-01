@@ -56,7 +56,7 @@ void VideodrommControllerApp::setup()
 		fs::path mPath = getAssetPath("") / imgSeqPath;
 		// tests for valid path 
 		if (fs::exists(mPath)) {
-			mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDAnimation, mPath.string()));
+			mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDAnimation, mVDSession, mPath.string()));
 		}
 	}
 
@@ -142,7 +142,6 @@ void VideodrommControllerApp::setup()
 	displayHeight = mVDSettings->mMainWindowHeight - 50;
 	mouseGlobal = false;
 	static float f = 0.0f;
-
 	mVDAnimation->tapTempo();
 }
 void VideodrommControllerApp::cleanup()
@@ -151,6 +150,7 @@ void VideodrommControllerApp::cleanup()
 	// save warp settings
 	Warp::writeSettings(mWarps, writeFile(mWarpSettings));
 	mVDSettings->save();
+	mVDSession->save();
 	ui::Shutdown();
 	quit();
 }
@@ -427,7 +427,7 @@ void VideodrommControllerApp::renderUIToFbo()
 
 #pragma region Info
 
-	ui::SetNextWindowSize(ImVec2(1024, 100), ImGuiSetCond_Once);
+	ui::SetNextWindowSize(ImVec2(1000, 100), ImGuiSetCond_Once);
 	ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
 	sprintf_s(buf, "Videodromm Fps %c %d###fps", "|/-\\"[(int)(ImGui::GetTime() / 0.25f) & 3], (int)mVDSettings->iFps);
 	ui::Begin(buf);
@@ -451,17 +451,25 @@ void VideodrommControllerApp::renderUIToFbo()
 		ui::SameLine();
 
 		if (ui::Button("Stop Load")) mVDImageSequences[0]->stopLoading();
-#pragma region Audio
-
 		ui::SameLine();
 		ui::Text("Msg: %s", mVDSettings->mMsg.c_str());
+#pragma region Audio
+
 		if (ui::Button("x##spdx")) { mVDSettings->iSpeedMultiplier = 1.0; }
 		ui::SameLine();
 		ui::SliderFloat("speed x", &mVDSettings->iSpeedMultiplier, 0.01f, 5.0f, "%.1f");
 		ui::SameLine();
 		ui::Text("Beat %d ", mVDSettings->iBeat);
 		ui::SameLine();
+		ui::Text("Beat Idx %d ", mVDAnimation->iBeatIndex);
+		ui::SameLine();
 		ui::Text("Bar %d ", mVDAnimation->iBar);
+		ui::SameLine();
+
+		if (ui::Button("x##bpbx")) { mVDSession->iBeatsPerBar = 1; }
+		ui::SameLine();
+		ui::SliderInt("beats per bar", &mVDSession->iBeatsPerBar, 1, 8);
+
 		ui::SameLine();
 		ui::Text("Time %.2f", mVDSettings->iGlobalTime);
 		ui::SameLine();
@@ -481,6 +489,7 @@ void VideodrommControllerApp::renderUIToFbo()
 
 		//void Batchass::setTimeFactor(const int &aTimeFactor)
 		ui::SliderFloat("time x", &mVDAnimation->iTimeFactor, 0.0001f, 1.0f, "%.01f");
+		ui::SameLine();
 
 		static ImVector<float> timeValues; if (timeValues.empty()) { timeValues.resize(40); memset(&timeValues.front(), 0, timeValues.size()*sizeof(float)); }
 		static int timeValues_offset = 0;
@@ -522,7 +531,7 @@ void VideodrommControllerApp::renderUIToFbo()
 		ui::PopItemWidth();
 	}
 	ui::End();
-	xPos = margin + 1024;
+	xPos = margin + 1000;
 
 #pragma endregion Info
 

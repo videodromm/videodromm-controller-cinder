@@ -51,14 +51,7 @@ void VideodrommControllerApp::setup()
 	// Image sequence
 	CI_LOG_V("Assets folder: " + mVDUtils->getPath("").string());
 	string imgSeqPath = mVDSession->getImageSequencePath();
-	// only load image sequence from subfolder in assets folder
-	if (imgSeqPath.length() > 0) {
-		fs::path mPath = getAssetPath("") / imgSeqPath;
-		// tests for valid path 
-		if (fs::exists(mPath)) {
-			mVDImageSequences.push_back(VDImageSequence::create(mVDSettings, mVDAnimation, mVDSession, mPath.string()));
-		}
-	}
+
 
 	// Audio
 	mVDAudio = VDAudio::create(mVDSettings); // TODO check for line in presence RTE otherwise
@@ -66,6 +59,8 @@ void VideodrommControllerApp::setup()
 	mVDShaders = VDShaders::create(mVDSettings);
 	// Textures
 	mVDTextures = VDTextures::create(mVDSettings, mVDShaders, mVDAnimation);
+	// try loading image sequence from dir
+	imgSeqFboIndex = mVDTextures->loadImageSequence(1, mVDSession->getImageSequencePath());
 
 	setFrameRate(mVDSession->getTargetFps());
 	mFadeInDelay = true;
@@ -232,30 +227,30 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 				break;
 			case KeyEvent::KEY_p:
 				if (mMovie) mMovie->play();
-				for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
+				/*for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
 				{
 					mVDImageSequences[i]->playSequence();
-				}
+				}*/
 				break;
 			case KeyEvent::KEY_LEFT:
-				for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
-				{
-					mVDImageSequences[i]->pauseSequence();
-					mVDSettings->iBeat--;
-					// Seek to a new position in the sequence
-					mImageSequencePosition = mVDImageSequences[i]->getPlayheadPosition();
-					mVDImageSequences[i]->setPlayheadPosition(--mImageSequencePosition);
-				}
+				//for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
+				//{
+				//	mVDImageSequences[i]->pauseSequence();
+				//	mVDSettings->iBeat--;
+				//	// Seek to a new position in the sequence
+				//	mImageSequencePosition = mVDImageSequences[i]->getPlayheadPosition();
+				//	mVDImageSequences[i]->setPlayheadPosition(--mImageSequencePosition);
+				//}
 				break;
 			case KeyEvent::KEY_RIGHT:
-				for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
-				{
-					mVDImageSequences[i]->pauseSequence();
-					mVDSettings->iBeat++;
-					// Seek to a new position in the sequence
-					mImageSequencePosition = mVDImageSequences[i]->getPlayheadPosition();
-					mVDImageSequences[i]->setPlayheadPosition(++mImageSequencePosition);
-				}
+				//for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
+				//{
+				//	mVDImageSequences[i]->pauseSequence();
+				//	mVDSettings->iBeat++;
+				//	// Seek to a new position in the sequence
+				//	mImageSequencePosition = mVDImageSequences[i]->getPlayheadPosition();
+				//	mVDImageSequences[i]->setPlayheadPosition(++mImageSequencePosition);
+				//}
 				break;
 			case KeyEvent::KEY_SPACE:
 				if (mMovie) { if (mMovie->isPlaying()) mMovie->stop(); else mMovie->play(); }
@@ -305,10 +300,7 @@ void VideodrommControllerApp::update()
 	mVDSettings->iFps = getAverageFps();
 	mVDSettings->sFps = toString(floor(mVDSettings->iFps));
 	mVDAnimation->update();
-	for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
-	{
-		mVDImageSequences[i]->update();
-	}
+	
 	mVDTextures->update();
 	mVDAudio->update();
 	mVDRouter->update();
@@ -354,8 +346,7 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 	else if (ext == "")
 	{
 		// try loading image sequence from dir
-		//mVDImageSequence->createFromDir(mFile + "/", 0);// TODO index);
-		//mVDImageSequence->playSequence(0);
+		imgSeqFboIndex = mVDTextures->loadImageSequence(index, mFile);
 	}
 
 }
@@ -376,20 +367,11 @@ void VideodrommControllerApp::renderSceneToFbo()
 	//gl::color(Color::white());
 	gl::draw(mVDTextures->getFboTexture(0));
 
-	if (mVDImageSequences.size() > 0) mVDTextures->setFboTexture(mVDImageSequences[0]->getTexture());
 
 	int i = 0;
 	// iterate over the warps and draw their content
 	for (auto &warp : mWarps) {
-		/*if (i == 0) {
-			for (unsigned int j = 0; j < mVDImageSequences.size(); j++) {
-			warp->draw(mVDImageSequences[j]->getTexture(), mVDImageSequences[j]->getTexture()->getBounds());
-			}
-			}
-			else   {*/
-		warp->draw(mVDTextures->getFboTexture(i), mVDTextures->getFboTexture(0)->getBounds());
-		/*}
-		i++;*/
+		warp->draw(mVDTextures->getFboTexture(imgSeqFboIndex), mVDTextures->getFboTexture(imgSeqFboIndex)->getBounds());
 	}
 }
 void VideodrommControllerApp::drawRenderWindow()
@@ -450,8 +432,6 @@ void VideodrommControllerApp::renderUIToFbo()
 		}
 		ui::SameLine();
 
-		if (ui::Button("Stop Load")) mVDImageSequences[0]->stopLoading();
-		ui::SameLine();
 		ui::Text("Msg: %s", mVDSettings->mMsg.c_str());
 #pragma region Audio
 
@@ -874,12 +854,12 @@ void VideodrommControllerApp::renderUIToFbo()
 
 		sprintf_s(buf, "FV##left%d", 40);
 		//
-		if (mVDImageSequences.size() > 0) {
+		/*if (mVDImageSequences.size() > 0) {
 			ui::Image((void*)mVDImageSequences[0]->getTexture()->getId(), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
 		}
-		else {
-			ui::Image((void*)mVDTextures->getFboTextureId(0), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
-		}
+		else {*/
+			ui::Image((void*)mVDTextures->getFboTextureId(imgSeqFboIndex), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
+		//}
 		ui::PopStyleColor(3);
 		ui::PopItemWidth();
 	}
@@ -972,6 +952,9 @@ void VideodrommControllerApp::renderUIToFbo()
 					mVDTextures->flipTexture(i);
 				}
 				/*
+				//if (ui::Button("Stop Load")) mVDImageSequences[0]->stopLoading();
+				//ui::SameLine();
+
 				if (mVDImageSequences[i]->isSequence(i)) {
 				if (!mVDImageSequences[i]->isLoadingFromDisk()) {
 				ui::SameLine();

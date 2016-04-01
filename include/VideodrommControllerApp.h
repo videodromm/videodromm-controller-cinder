@@ -18,8 +18,6 @@
 #include "VDRouter.h"
 // Animation
 #include "VDAnimation.h"
-// Image sequence
-#include "VDImageSequence.h"
 // Textures
 #include "VDTextures.h"
 // Shaders
@@ -82,14 +80,15 @@ private:
 	// Animation
 	VDAnimationRef				mVDAnimation;
 	// Image sequence
-	vector<VDImageSequenceRef>	mVDImageSequences;
-	int							mImageSequencePosition;
+	//vector<VDImageSequenceRef>	mVDImageSequences;
+	//int							mImageSequencePosition;
 	// Audio
 	VDAudioRef					mVDAudio;
 	// Shaders
 	VDShadersRef				mVDShaders;
 	// Textures
 	VDTexturesRef				mVDTextures;
+	int							imgSeqFboIndex;
 	// Fbos
 	//vector<VDFboRef>			mVDFbos;
 	// window mgmt

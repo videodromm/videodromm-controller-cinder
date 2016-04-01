@@ -109,21 +109,23 @@ void VideodrommControllerApp::setup()
 		mWarps.push_back(WarpPerspectiveBilinear::create());
 	}
 
-	mSrcArea = Area(0, 0, 700, 500);
+	//mSrcArea = Area(0, 0, 700, 500);
 	// TODO Warp::setSize(mWarps, mVDFbos[0]->getSize());
 	// load image
 	try {
 		mImage = gl::Texture::create(loadImage(loadAsset("help.jpg")),
 			gl::Texture2d::Format().loadTopDown().mipmap(true).minFilter(GL_LINEAR_MIPMAP_LINEAR));
 
-		mSrcArea = mImage->getBounds();
+		//mSrcArea = mImage->getBounds();
 
 		// adjust the content size of the warps
-		Warp::setSize(mWarps, mImage->getSize());
+		//Warp::setSize(mWarps, mImage->getSize());
 	}
 	catch (const std::exception &e) {
 		console() << e.what() << std::endl;
 	}
+	Warp::setSize(mWarps, ivec2(mVDSettings->mFboWidth, mVDSettings->mFboHeight));
+	//Warp::setSize(mWarps, mImage->getSize());
 	// movie
 	mLoopVideo = false;
 
@@ -371,25 +373,23 @@ void VideodrommControllerApp::renderSceneToFbo()
 		if (mMovie->isPlaying()) mMovie->draw();
 	}
 	//mVDTextures->draw();
-	// clear the window and set the drawing color to white
-	//gl::clear();
 	//gl::color(Color::white());
-	//gl::setMatricesWindow(mVDSettings->mFboWidth * mVDSettings->mUIRefresh, mVDSettings->mFboHeight * mVDSettings->mUIRefresh);
+	gl::draw(mVDTextures->getFboTexture(0));
 
 	if (mVDImageSequences.size() > 0) mVDTextures->setFboTexture(mVDImageSequences[0]->getTexture());
 
 	int i = 0;
 	// iterate over the warps and draw their content
 	for (auto &warp : mWarps) {
-		if (i == 0) {
+		/*if (i == 0) {
 			for (unsigned int j = 0; j < mVDImageSequences.size(); j++) {
-				warp->draw(mVDImageSequences[j]->getTexture(), mVDImageSequences[j]->getTexture()->getBounds());
+			warp->draw(mVDImageSequences[j]->getTexture(), mVDImageSequences[j]->getTexture()->getBounds());
 			}
-		}
-		else   {
-			warp->draw(mVDTextures->getFboTexture(i - 1), mVDTextures->getFboTexture(0)->getBounds());
-		}
-		i++;
+			}
+			else   {*/
+		warp->draw(mVDTextures->getFboTexture(i), mVDTextures->getFboTexture(0)->getBounds());
+		/*}
+		i++;*/
 	}
 }
 void VideodrommControllerApp::drawRenderWindow()
@@ -404,7 +404,7 @@ void VideodrommControllerApp::drawRenderWindow()
 		}
 	}
 	gl::clear(Color::black());
-	gl::draw(mRenderFbo->getColorTexture());// , Rectf(128, 0, 256, 128)); // TODO check this rect!getDepthTexture
+	gl::draw(mRenderFbo->getColorTexture());
 }
 // Render the UI into the FBO
 void VideodrommControllerApp::renderUIToFbo()

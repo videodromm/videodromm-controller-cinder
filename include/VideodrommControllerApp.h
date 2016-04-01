@@ -24,6 +24,8 @@
 #include "VDTextures.h"
 // Shaders
 #include "VDShaders.h"
+// fbo
+#include "VDFbo.h"
 // Audio
 #include "VDAudio.h"
 // fbo
@@ -122,7 +124,7 @@ private:
 	// warping
 	gl::TextureRef				mImage;
 	WarpList					mWarps;
-	Area						mSrcArea;
+	//Area						mSrcArea;
 	fs::path					mWarpSettings;
 	// fbo
 	void						renderSceneToFbo();

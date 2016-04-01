@@ -84,7 +84,7 @@ void VideodrommControllerApp::setup()
 	else {
 
 		// OK mControlWindow = createWindow(Window::Format().size(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight));
-		mControlWindow = createWindow(Window::Format().size(640, 400));
+		mControlWindow = createWindow(Window::Format().size(1280, 500));
 		mControlWindow->setPos(mVDSettings->mMainWindowX, mVDSettings->mMainWindowY);
 		mControlWindow->setBorderless();
 		mControlWindow->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawControlWindow, this));
@@ -208,74 +208,65 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 	// pass this key event to the warp editor first
 	if (!Warp::handleKeyDown(mWarps, event)) {
 		// warp editor did not handle the key, so handle it here
-		switch (event.getCode()) {
-		case KeyEvent::KEY_ESCAPE:
-			// quit the application
-			quit();
-			break;
-		case KeyEvent::KEY_f:
-			// toggle full screen
-			setFullScreen(!isFullScreen());
-			break;
-		case KeyEvent::KEY_v:
-			// toggle vertical sync
-			gl::enableVerticalSync(!gl::isVerticalSyncEnabled());
-			break;
-		case KeyEvent::KEY_w:
-			// toggle warp edit mode
-			Warp::enableEditMode(!Warp::isEditModeEnabled());
-			break;
-		case KeyEvent::KEY_o:
-			moviePath = getOpenFilePath();
-			if (!moviePath.empty())
-				loadMovieFile(moviePath);
-			break;
-		case KeyEvent::KEY_r:
-			if (mMovie) mMovie.reset();
-			break;
-		case KeyEvent::KEY_p:
-			if (mMovie) mMovie->play();
-			for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
-			{
-				mVDImageSequences[i]->playSequence();
-			}
-			break;
-		case KeyEvent::KEY_LEFT:
-			for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
-			{
-				mVDImageSequences[i]->pauseSequence();
-				mVDSettings->iBeat--;
-				// Seek to a new position in the sequence
-				mImageSequencePosition = mVDImageSequences[i]->getPlayheadPosition();
-				mVDImageSequences[i]->setPlayheadPosition(--mImageSequencePosition);
-			}
-			break;
-		case KeyEvent::KEY_RIGHT:
-			for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
-			{
-				mVDImageSequences[i]->pauseSequence();
-				mVDSettings->iBeat++;
-				// Seek to a new position in the sequence
-				mImageSequencePosition = mVDImageSequences[i]->getPlayheadPosition();
-				mVDImageSequences[i]->setPlayheadPosition(++mImageSequencePosition);
-			}
-			break;
+		if (!mVDAnimation->handleKeyDown(event)) {
+			// Animation did not handle the key, so handle it here
 
-		case KeyEvent::KEY_s:
-			//if (mMovie) mMovie->stop();
-			mVDAnimation->save();
-			break;
-		case KeyEvent::KEY_SPACE:
-			if (mMovie) { if (mMovie->isPlaying()) mMovie->stop(); else mMovie->play(); }
-			break;
-		case KeyEvent::KEY_l:
-			mVDAnimation->load();
-			mLoopVideo = !mLoopVideo;
-			if (mMovie) mMovie->setLoop(mLoopVideo);
-			break;
-		case KeyEvent::KEY_n:
-			mWarps.push_back(WarpPerspectiveBilinear::create());
-			break;
+			switch (event.getCode()) {
+			case KeyEvent::KEY_ESCAPE:
+				// quit the application
+				quit();
+				break;
+			case KeyEvent::KEY_w:
+				// toggle warp edit mode
+				Warp::enableEditMode(!Warp::isEditModeEnabled());
+				break;
+			case KeyEvent::KEY_o:
+				moviePath = getOpenFilePath();
+				if (!moviePath.empty())
+					loadMovieFile(moviePath);
+				break;
+			case KeyEvent::KEY_r:
+				if (mMovie) mMovie.reset();
+				break;
+			case KeyEvent::KEY_p:
+				if (mMovie) mMovie->play();
+				for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
+				{
+					mVDImageSequences[i]->playSequence();
+				}
+				break;
+			case KeyEvent::KEY_LEFT:
+				for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
+				{
+					mVDImageSequences[i]->pauseSequence();
+					mVDSettings->iBeat--;
+					// Seek to a new position in the sequence
+					mImageSequencePosition = mVDImageSequences[i]->getPlayheadPosition();
+					mVDImageSequences[i]->setPlayheadPosition(--mImageSequencePosition);
+				}
+				break;
+			case KeyEvent::KEY_RIGHT:
+				for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
+				{
+					mVDImageSequences[i]->pauseSequence();
+					mVDSettings->iBeat++;
+					// Seek to a new position in the sequence
+					mImageSequencePosition = mVDImageSequences[i]->getPlayheadPosition();
+					mVDImageSequences[i]->setPlayheadPosition(++mImageSequencePosition);
+				}
+				break;
+			case KeyEvent::KEY_SPACE:
+				if (mMovie) { if (mMovie->isPlaying()) mMovie->stop(); else mMovie->play(); }
+				break;
+			case KeyEvent::KEY_l:
+				mVDAnimation->load();
+				mLoopVideo = !mLoopVideo;
+				if (mMovie) mMovie->setLoop(mLoopVideo);
+				break;
+			case KeyEvent::KEY_n:
+				mWarps.push_back(WarpPerspectiveBilinear::create());
+				break;
+			}
 		}
 	}
 }
@@ -285,6 +276,9 @@ void VideodrommControllerApp::keyUp(KeyEvent event)
 	// pass this key event to the warp editor first
 	if (!Warp::handleKeyUp(mWarps, event)) {
 		// let your application perform its keyUp handling here
+		if (!mVDAnimation->handleKeyUp(event)) {
+			// Animation did not handle the key, so handle it here
+		}
 	}
 }
 void VideodrommControllerApp::loadMovieFile(const fs::path &moviePath)
@@ -477,7 +471,8 @@ void VideodrommControllerApp::renderUIToFbo()
 		mVDSettings->iDebug ^= ui::Button("Debug");
 		ui::SameLine();
 
-		//ui::Text("Tempo %.2f ", mVDAnimation->mTempo);
+		ui::Text("Tempo %.2f ", mVDSession->getBpm());
+		ui::Text("Target FPS %.2f ", mVDSession->getTargetFps());
 		ui::SameLine();
 		if (ui::Button("Tap tempo")) { mVDAnimation->tapTempo(); }
 		ui::SameLine();
@@ -485,7 +480,7 @@ void VideodrommControllerApp::renderUIToFbo()
 		ui::SameLine();
 
 		//void Batchass::setTimeFactor(const int &aTimeFactor)
-		ui::SliderFloat("time x", &mVDAnimation->iTimeFactor, 0.0001f, 32.0f, "%.1f");
+		ui::SliderFloat("time x", &mVDAnimation->iTimeFactor, 0.0001f, 1.0f, "%.01f");
 
 		static ImVector<float> timeValues; if (timeValues.empty()) { timeValues.resize(40); memset(&timeValues.front(), 0, timeValues.size()*sizeof(float)); }
 		static int timeValues_offset = 0;

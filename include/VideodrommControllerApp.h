@@ -52,8 +52,8 @@ public:
 	void update() override;
 	void drawRenderWindow();
 	void drawControlWindow();
+	void saveThumb();
 	void fileDrop(FileDropEvent event) override;
-
 	//void resize() override;
 	void resizeWindow();
 
@@ -105,6 +105,9 @@ private:
 	int							displayHeight;
 	int							xPos;
 	int							yPos;
+	int							yPosRow1;
+	int							yPosRow2;
+	int							yPosRow3;
 	int							largeW;
 	int							largeH;
 	int							largePreviewW;
@@ -123,6 +126,7 @@ private:
 	// warping
 	gl::TextureRef				mImage;
 	WarpList					mWarps;
+	string						fileWarpsName;
 	//Area						mSrcArea;
 	fs::path					mWarpSettings;
 	// fbo
@@ -131,5 +135,7 @@ private:
 	void						renderUIToFbo();
 	gl::FboRef					mUIFbo;
 	bool						mFadeInDelay;
+	// timeline
+	Anim<float>					mSaveThumbTimer;
 
 };

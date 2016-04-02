@@ -79,12 +79,12 @@ void VideodrommControllerApp::setup()
 	else {
 
 		// OK mControlWindow = createWindow(Window::Format().size(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight));
-		mControlWindow = createWindow(Window::Format().size(1280, 500));
+		mControlWindow = createWindow(Window::Format().size(1280, 700));
 		mControlWindow->setPos(mVDSettings->mMainWindowX, mVDSettings->mMainWindowY);
 		mControlWindow->setBorderless();
 		mControlWindow->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawControlWindow, this));
 		mControlWindow->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
-
+		
 		// UI fbo
 		mUIFbo = gl::Fbo::create(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight, format.colorTexture());
 
@@ -121,6 +121,7 @@ void VideodrommControllerApp::setup()
 	}
 	Warp::setSize(mWarps, ivec2(mVDSettings->mFboWidth, mVDSettings->mFboHeight));
 	//Warp::setSize(mWarps, mImage->getSize());
+	mSaveThumbTimer = 0.0f;
 	// movie
 	mLoopVideo = false;
 
@@ -135,8 +136,21 @@ void VideodrommControllerApp::setup()
 	largePreviewW = mVDSettings->mPreviewWidth + margin;
 	largePreviewH = (mVDSettings->mPreviewHeight + margin) * 2.4;
 	displayHeight = mVDSettings->mMainWindowHeight - 50;
+	yPosRow1 = 100 + margin;
+	yPosRow2 = yPosRow1 + largePreviewH + margin;
+	yPosRow3 = yPosRow2 + h*1.4 + margin;
+
 	mouseGlobal = false;
 	static float f = 0.0f;
+	// mouse cursor
+	if (mVDSettings->mCursorVisible)
+	{
+		hideCursor();
+	}
+	else
+	{
+		showCursor();
+	}
 	mVDAnimation->tapTempo();
 }
 void VideodrommControllerApp::cleanup()
@@ -260,8 +274,26 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 				mLoopVideo = !mLoopVideo;
 				if (mMovie) mMovie->setLoop(mLoopVideo);
 				break;
+			case KeyEvent::KEY_c:
+				// mouse cursor
+				mVDSettings->mCursorVisible = !mVDSettings->mCursorVisible;
+				if (mVDSettings->mCursorVisible)
+				{
+					hideCursor();
+				}
+				else
+				{
+					showCursor();
+				}
+				break;
 			case KeyEvent::KEY_n:
 				mWarps.push_back(WarpPerspectiveBilinear::create());
+				break;
+			case KeyEvent::KEY_a:
+				fileWarpsName = "warps" + toString(getElapsedFrames()) + ".xml";
+				mWarpSettings = getAssetPath("") / mVDSettings->mAssetsPath / fileWarpsName;
+				Warp::writeSettings(mWarps, writeFile(mWarpSettings));
+				mWarpSettings = getAssetPath("") / mVDSettings->mAssetsPath / "warps.xml";
 				break;
 			}
 		}
@@ -332,6 +364,18 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 	}
 	else if (ext == "glsl")
 	{
+		if (index < 0) index = 0;
+		if (index > mVDTextures->getFboCount() - 1) index = mVDTextures->getFboCount() - 1;
+		int rtn = mVDTextures->loadPixelFragmentShaderAtIndex(index, mFile );
+		if (rtn > -1 && rtn < mVDShaders->getCount())
+		{
+			
+			// reset zoom
+			mVDSettings->controlValues[22] = 1.0f;
+			
+			// save thumb
+			timeline().apply(&mSaveThumbTimer, 1.0f, 1.0f).finishFn([&]{ saveThumb(); });
+		}
 	}
 	else if (ext == "xml")
 	{
@@ -349,6 +393,22 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 		imgSeqFboIndex = mVDTextures->loadImageSequence(index, mFile);
 	}
 
+}
+void VideodrommControllerApp::saveThumb()
+{
+	/* TODO
+	string filename;
+	try
+	{
+		filename = mVDShaders->getFragFileName() + ".jpg";
+		writeImage(getAssetPath("") / "thumbs" / filename, mVDTextures)->getFboTexture(mParameterBag->mCurrentPreviewFboIndex));
+		CI_LOG_V("saved:" + filename);
+
+	}
+	catch (const std::exception &e)
+	{
+		CI_LOG_V("unable to save:" + filename + string(e.what()));
+	}*/
 }
 // Render the scene into the FBO
 void VideodrommControllerApp::renderSceneToFbo()
@@ -401,27 +461,30 @@ void VideodrommControllerApp::renderUIToFbo()
 	gl::color(Color::white());
 	gl::setMatricesWindow(500, 400);
 	// imgui
-	static int currentWindow = 0;
+	static int currentWindowRow1 = 0;
+	static int currentWindowRow2 = 0;
+	static int currentWindowRow3 = 0;
 
 	xPos = margin;
-	yPos = margin;
 	const char* warpInputs[] = { "mix", "left", "right", "warp1", "warp2", "preview", "abp", "live", "w8", "w9", "w10", "w11", "w12", "w13", "w14", "w15" };
 
 #pragma region Info
 
 	ui::SetNextWindowSize(ImVec2(1000, 100), ImGuiSetCond_Once);
-	ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
+	ui::SetNextWindowPos(ImVec2(xPos, margin), ImGuiSetCond_Once);
 	sprintf_s(buf, "Videodromm Fps %c %d###fps", "|/-\\"[(int)(ImGui::GetTime() / 0.25f) & 3], (int)mVDSettings->iFps);
 	ui::Begin(buf);
 	{
 		ImGui::PushItemWidth(mVDSettings->mPreviewFboWidth);
 
-		ImGui::RadioButton("Textures", &currentWindow, 0); ImGui::SameLine();
-		ImGui::RadioButton("Fbos", &currentWindow, 1); ImGui::SameLine();
-		ImGui::RadioButton("Shaders", &currentWindow, 2); ImGui::SameLine();
-		ImGui::RadioButton("Osc", &currentWindow, 3); ImGui::SameLine();
-		ImGui::RadioButton("Midi", &currentWindow, 4); ImGui::SameLine();
-		ImGui::RadioButton("Chn", &currentWindow, 5); ui::SameLine();
+		ImGui::RadioButton("Textures", &currentWindowRow2, 0); ImGui::SameLine();
+		ImGui::RadioButton("Fbos", &currentWindowRow2, 1); ImGui::SameLine();
+		ImGui::RadioButton("Shaders", &currentWindowRow2, 2); ImGui::SameLine();
+
+		ImGui::RadioButton("Osc", &currentWindowRow3, 0); ImGui::SameLine();
+		ImGui::RadioButton("Midi", &currentWindowRow3, 1); ImGui::SameLine();
+		ImGui::RadioButton("Chn", &currentWindowRow3, 2); ui::SameLine();
+		ImGui::RadioButton("Blend", &currentWindowRow3, 3); ui::SameLine();
 
 		if (ui::Button("Save Params"))
 		{
@@ -518,7 +581,7 @@ void VideodrommControllerApp::renderUIToFbo()
 #pragma region Global
 
 	ui::SetNextWindowSize(ImVec2(largeW, displayHeight), ImGuiSetCond_Once);
-	ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
+	ui::SetNextWindowPos(ImVec2(xPos, margin), ImGuiSetCond_Once);
 	ui::Begin("Animation");
 	{
 		ImGui::PushItemWidth(mVDSettings->mPreviewFboWidth);
@@ -837,14 +900,13 @@ void VideodrommControllerApp::renderUIToFbo()
 
 #pragma endregion Global
 	xPos = margin;
-	yPos += 100 + margin;
 
 #pragma region left
 	// push color for this chain, must be popped at the end
 	ui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.0f, 1.0f, 0.0f, 1.00f));
 
 	ui::SetNextWindowSize(ImVec2(largePreviewW, largePreviewH), ImGuiSetCond_Once);
-	ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
+	ui::SetNextWindowPos(ImVec2(xPos, yPosRow1), ImGuiSetCond_Once);
 	ui::Begin("Source");
 	{
 		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
@@ -853,13 +915,9 @@ void VideodrommControllerApp::renderUIToFbo()
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
 
 		sprintf_s(buf, "FV##left%d", 40);
-		//
-		/*if (mVDImageSequences.size() > 0) {
-			ui::Image((void*)mVDImageSequences[0]->getTexture()->getId(), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
-			}
-			else {*/
+
 		ui::Image((void*)mVDTextures->getFboTextureId(imgSeqFboIndex), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
-		//}
+
 		ui::PopStyleColor(3);
 		ui::PopItemWidth();
 	}
@@ -877,7 +935,7 @@ void VideodrommControllerApp::renderUIToFbo()
 #pragma region mix
 	// left/warp1 fbo
 	ui::SetNextWindowSize(ImVec2(largePreviewW, largePreviewH), ImGuiSetCond_Once);
-	ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
+	ui::SetNextWindowPos(ImVec2(xPos, yPosRow1), ImGuiSetCond_Once);
 	ui::Begin("Left/warp1 fbo");
 	{
 		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
@@ -896,7 +954,7 @@ void VideodrommControllerApp::renderUIToFbo()
 
 	// right/warp2 fbo
 	ui::SetNextWindowSize(ImVec2(largePreviewW, largePreviewH), ImGuiSetCond_Once);
-	ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
+	ui::SetNextWindowPos(ImVec2(xPos, yPosRow1), ImGuiSetCond_Once);
 	ui::Begin("Right/warp2 fbo");
 	{
 		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
@@ -917,8 +975,7 @@ void VideodrommControllerApp::renderUIToFbo()
 
 #pragma endregion mix
 	xPos = margin;
-	yPos += largePreviewH + margin;
-	switch (currentWindow) {
+	switch (currentWindowRow2) {
 	case 0:
 		// textures
 		mVDSettings->mRenderThumbs = false;
@@ -928,7 +985,7 @@ void VideodrommControllerApp::renderUIToFbo()
 		for (int i = 0; i < mVDTextures->getInputTexturesCount(); i++)
 		{
 			ui::SetNextWindowSize(ImVec2(w, h*1.4));
-			ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPos));
+			ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPosRow2));
 			//ui::Begin(textureNames[i], NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 			ui::Begin(mVDTextures->getTextureName(i).c_str(), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 			{
@@ -958,36 +1015,39 @@ void VideodrommControllerApp::renderUIToFbo()
 				if (mVDTextures->inputTextureIsSequence(i)) {
 					if (!(mVDTextures->inputTextureIsLoadingFromDisk(i))) {
 						ui::SameLine();
-						sprintf_s(buf, "LD##s%d", i);
+						sprintf_s(buf, "l##s%d", i);
 						if (ui::Button(buf))
 						{
 							mVDTextures->inputTextureToggleLoadingFromDisk(i);
 						}
 						if (ui::IsItemHovered()) ui::SetTooltip("Pause loading from disk");
 					}
-					sprintf_s(buf, ">##s%d", i);
+					ui::SameLine();
+					sprintf_s(buf, "p##s%d", i);
 					if (ui::Button(buf))
 					{
 						mVDTextures->inputTexturePlayPauseSequence(i);
 					}
+						if (ui::IsItemHovered()) ui::SetTooltip("Play/Pause");
 					ui::SameLine();
-					sprintf_s(buf, "s##s%d", i);
+					sprintf_s(buf, "b##s%d", i);
 					if (ui::Button(buf))
 					{
 						mVDTextures->inputTextureSyncToBeatSequence(i);
 					}
+						if (ui::IsItemHovered()) ui::SetTooltip("Sync to beat");
 					ui::SameLine();
 					sprintf_s(buf, "r##s%d", i);
 					if (ui::Button(buf))
 					{
 						mVDTextures->inputTextureReverseSequence(i);
 					}
-					ui::SameLine();
+						if (ui::IsItemHovered()) ui::SetTooltip("Reverse");
 					playheadPositions[i] = mVDTextures->inputTextureGetPlayheadPosition(i);
 					/*sprintf_s(buf, "p%d##s%d", playheadPositions[i], i);
 					if (ui::Button(buf))
 					{
-						mVDTextures->inputTextureSetPlayheadPosition(i, playheadPositions[i]);
+					mVDTextures->inputTextureSetPlayheadPosition(i, playheadPositions[i]);
 					}*/
 
 					if (ui::SliderInt("scrub", &playheadPositions[i], 0, mVDTextures->inputTextureGetMaxFrame(i)))
@@ -1021,7 +1081,7 @@ void VideodrommControllerApp::renderUIToFbo()
 		for (int i = 0; i < mVDTextures->getFboCount(); i++)
 		{
 			ui::SetNextWindowSize(ImVec2(w, h));
-			ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPos));
+			ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPosRow2));
 			ui::Begin(mVDTextures->getTextureName(i).c_str(), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 			{
 
@@ -1071,6 +1131,7 @@ void VideodrommControllerApp::renderUIToFbo()
 		}
 		ui::End();*/
 		xPos = margin;
+		yPos = yPosRow2;
 		for (int i = 0; i < mVDShaders->getCount(); i++)
 		{
 			//if (filter.PassFilter(mVDShaders->getShader(i).name.c_str()) && mVDShaders->getShader(i).active)
@@ -1201,18 +1262,21 @@ void VideodrommControllerApp::renderUIToFbo()
 
 #pragma endregion library
 		break;
-	case 3:
+	}
+	xPos = margin;
+	switch (currentWindowRow3) {
+	case 0:
 		// Osc
 		mVDSettings->mRenderThumbs = false;
 		break;
-	case 4:
+	case 1:
 		// Midi
 		mVDSettings->mRenderThumbs = false;
 
 #pragma region MIDI
 
 		ui::SetNextWindowSize(ImVec2(largePreviewW + 20, largePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(xPos, yPosRow3), ImGuiSetCond_Once);
 		ui::Begin("MIDI");
 		{
 			sprintf_s(buf, "Enable");
@@ -1260,13 +1324,13 @@ void VideodrommControllerApp::renderUIToFbo()
 
 #pragma endregion MIDI
 		break;
-	case 5:
+	case 2:
 		// Channels
 		mVDSettings->mRenderThumbs = false;
 #pragma region channels
 
 		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(xPos, yPos), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(xPos, yPosRow3), ImGuiSetCond_Once);
 
 		ui::Begin("Channels");
 		{
@@ -1299,6 +1363,9 @@ void VideodrommControllerApp::renderUIToFbo()
 
 
 #pragma endregion channels
+		break;
+	case 3:
+		// Blendmodes
 
 		break;
 
@@ -1306,7 +1373,6 @@ void VideodrommControllerApp::renderUIToFbo()
 
 	// next line
 	xPos = margin;
-	yPos += largePreviewH + margin;
 
 	/*
 	#pragma region warps

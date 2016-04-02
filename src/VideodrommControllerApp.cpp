@@ -229,27 +229,27 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 				if (mMovie) mMovie->play();
 				/*for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
 				{
-					mVDImageSequences[i]->playSequence();
+				(mVDTextures->getInputTexture(i)->playSequence();
 				}*/
 				break;
 			case KeyEvent::KEY_LEFT:
 				//for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
 				//{
-				//	mVDImageSequences[i]->pauseSequence();
+				//	(mVDTextures->getInputTexture(i)->pauseSequence();
 				//	mVDSettings->iBeat--;
 				//	// Seek to a new position in the sequence
-				//	mImageSequencePosition = mVDImageSequences[i]->getPlayheadPosition();
-				//	mVDImageSequences[i]->setPlayheadPosition(--mImageSequencePosition);
+				//	mImageSequencePosition = (mVDTextures->getInputTexture(i)->getPlayheadPosition();
+				//	(mVDTextures->getInputTexture(i)->setPlayheadPosition(--mImageSequencePosition);
 				//}
 				break;
 			case KeyEvent::KEY_RIGHT:
 				//for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
 				//{
-				//	mVDImageSequences[i]->pauseSequence();
+				//	(mVDTextures->getInputTexture(i)->pauseSequence();
 				//	mVDSettings->iBeat++;
 				//	// Seek to a new position in the sequence
-				//	mImageSequencePosition = mVDImageSequences[i]->getPlayheadPosition();
-				//	mVDImageSequences[i]->setPlayheadPosition(++mImageSequencePosition);
+				//	mImageSequencePosition = (mVDTextures->getInputTexture(i)->getPlayheadPosition();
+				//	(mVDTextures->getInputTexture(i)->setPlayheadPosition(++mImageSequencePosition);
 				//}
 				break;
 			case KeyEvent::KEY_SPACE:
@@ -300,7 +300,7 @@ void VideodrommControllerApp::update()
 	mVDSettings->iFps = getAverageFps();
 	mVDSettings->sFps = toString(floor(mVDSettings->iFps));
 	mVDAnimation->update();
-	
+
 	mVDTextures->update();
 	mVDAudio->update();
 	mVDRouter->update();
@@ -856,9 +856,9 @@ void VideodrommControllerApp::renderUIToFbo()
 		//
 		/*if (mVDImageSequences.size() > 0) {
 			ui::Image((void*)mVDImageSequences[0]->getTexture()->getId(), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
-		}
-		else {*/
-			ui::Image((void*)mVDTextures->getFboTextureId(imgSeqFboIndex), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
+			}
+			else {*/
+		ui::Image((void*)mVDTextures->getFboTextureId(imgSeqFboIndex), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
 		//}
 		ui::PopStyleColor(3);
 		ui::PopItemWidth();
@@ -932,11 +932,6 @@ void VideodrommControllerApp::renderUIToFbo()
 			//ui::Begin(textureNames[i], NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 			ui::Begin(mVDTextures->getTextureName(i).c_str(), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 			{
-				ui::PushID(i);
-				ui::Image((void*)mVDTextures->getInputTexture(i)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
-				ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
-				ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
-				ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
 				//BEGIN
 				/*sprintf_s(buf, "WS##s%d", i);
 				if (ui::Button(buf))
@@ -945,62 +940,67 @@ void VideodrommControllerApp::renderUIToFbo()
 				//mBatchass->wsWrite(buf);
 				}
 				if (ui::IsItemHovered()) ui::SetTooltip("Send texture file name via WebSockets");
-				ui::SameLine();*/
+				ui::SameLine();
 				sprintf(buf, "FV##s%d", i);
 				if (ui::Button(buf))
 				{
-					mVDTextures->flipTexture(i);
-				}
-				/*
+				mVDTextures->flipTexture(i);
+				}*/
+				ui::PushID(i);
+				ui::Image((void*)mVDTextures->getInputTexture(i)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
+				ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
+				ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
+				ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
+
 				//if (ui::Button("Stop Load")) mVDImageSequences[0]->stopLoading();
 				//ui::SameLine();
 
-				if (mVDImageSequences[i]->isSequence(i)) {
-				if (!mVDImageSequences[i]->isLoadingFromDisk()) {
-				ui::SameLine();
-				sprintf_s(buf, "LD##s%d", i);
-				if (ui::Button(buf))
-				{
-				mVDImageSequences[i]->toggleLoadingFromDisk(i);
-				}
-				if (ui::IsItemHovered()) ui::SetTooltip("Pause loading from disk");
-				}
-				sprintf_s(buf, ">##s%d", i);
-				if (ui::Button(buf))
-				{
-				mVDImageSequences[i]->playSequence(i);
-				}
-				ui::SameLine();
-				sprintf_s(buf, "\"##s%d", i);
-				if (ui::Button(buf))
-				{
-				mVDImageSequences[i]->pauseSequence(i);
-				}
-				ui::SameLine();
-				sprintf_s(buf, "r##s%d", i);
-				if (ui::Button(buf))
-				{
-				mVDImageSequences[i]->reverseSequence(i);
-				}
-				ui::SameLine();
-				playheadPositions[i] = mVDImageSequences[i]->getPlayheadPosition(i);
-				sprintf_s(buf, "p%d##s%d", playheadPositions[i], i);
-				if (ui::Button(buf))
-				{
-				mVDImageSequences[i]->setPlayheadPosition(i, 0);
-				}
+				if (mVDTextures->inputTextureIsSequence(i)) {
+					if (!(mVDTextures->inputTextureIsLoadingFromDisk(i))) {
+						ui::SameLine();
+						sprintf_s(buf, "LD##s%d", i);
+						if (ui::Button(buf))
+						{
+							mVDTextures->inputTextureToggleLoadingFromDisk(i);
+						}
+						if (ui::IsItemHovered()) ui::SetTooltip("Pause loading from disk");
+					}
+					sprintf_s(buf, ">##s%d", i);
+					if (ui::Button(buf))
+					{
+						mVDTextures->inputTexturePlayPauseSequence(i);
+					}
+					ui::SameLine();
+					sprintf_s(buf, "s##s%d", i);
+					if (ui::Button(buf))
+					{
+						mVDTextures->inputTextureSyncToBeatSequence(i);
+					}
+					ui::SameLine();
+					sprintf_s(buf, "r##s%d", i);
+					if (ui::Button(buf))
+					{
+						mVDTextures->inputTextureReverseSequence(i);
+					}
+					ui::SameLine();
+					playheadPositions[i] = mVDTextures->inputTextureGetPlayheadPosition(i);
+					/*sprintf_s(buf, "p%d##s%d", playheadPositions[i], i);
+					if (ui::Button(buf))
+					{
+						mVDTextures->inputTextureSetPlayheadPosition(i, playheadPositions[i]);
+					}*/
 
-				if (ui::SliderInt("scrub", &playheadPositions[i], 0, mVDImageSequences[i]->getMaxFrames(i)))
-				{
-				mVDImageSequences[i]->setPlayheadPosition(i, playheadPositions[i]);
-				}
-				speeds[i] = mVDImageSequences[i]->getSpeed(i);
-				if (ui::SliderFloat("speed", &speeds[i], 0.0f, 6.0f))
-				{
-				mVDImageSequences[i]->setSpeed(i, speeds[i]);
-				}
+					if (ui::SliderInt("scrub", &playheadPositions[i], 0, mVDTextures->inputTextureGetMaxFrame(i)))
+					{
+						mVDTextures->inputTextureSetPlayheadPosition(i, playheadPositions[i]);
+					}
+					speeds[i] = mVDTextures->inputTextureGetSpeed(i);
+					if (ui::SliderInt("speed", &speeds[i], 0.0f, 6.0f))
+					{
+						mVDTextures->inputTextureSetSpeed(i, speeds[i]);
+					}
 
-				}*/
+				}
 
 				//END
 				ui::PopStyleColor(3);

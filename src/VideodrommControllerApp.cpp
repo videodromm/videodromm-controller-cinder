@@ -59,8 +59,13 @@ void VideodrommControllerApp::setup()
 	mVDShaders = VDShaders::create(mVDSettings);
 	// Textures
 	mVDTextures = VDTextures::create(mVDSettings, mVDShaders, mVDAnimation);
+	// fbo indexes
+	textFboIndex = imgSeqFboIndex = 0;
 	// try loading image sequence from dir
-	imgSeqFboIndex = mVDTextures->loadImageSequence(1, mVDSession->getImageSequencePath());
+	if (mVDSession->hasImageSequencePath()) imgSeqFboIndex = mVDTextures->loadImageSequence(1, mVDSession->getImageSequencePath());
+	// try to load text
+	if (mVDSession->hasText()) textFboIndex = mVDTextures->loadText(2, mVDSession->getText(), mVDSession->getTextStart(), mVDSession->getTextEnd());
+
 
 	setFrameRate(mVDSession->getTargetFps());
 	mFadeInDelay = true;
@@ -84,7 +89,7 @@ void VideodrommControllerApp::setup()
 		mControlWindow->setBorderless();
 		mControlWindow->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawControlWindow, this));
 		mControlWindow->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
-		
+
 		// UI fbo
 		mUIFbo = gl::Fbo::create(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight, format.colorTexture());
 
@@ -136,9 +141,12 @@ void VideodrommControllerApp::setup()
 	largePreviewW = mVDSettings->mPreviewWidth + margin;
 	largePreviewH = (mVDSettings->mPreviewHeight + margin) * 2.4;
 	displayHeight = mVDSettings->mMainWindowHeight - 50;
-	yPosRow1 = 100 + margin;
+	yPosRow1 = largePreviewH + margin;
 	yPosRow2 = yPosRow1 + largePreviewH + margin;
 	yPosRow3 = yPosRow2 + h*1.4 + margin;
+	xPosCol1 = mVDSettings->mFboWidth + margin;
+	xPosCol2 = xPosCol1 + margin + w * 2;
+	xPosCol3 = xPosCol2 + margin;
 
 	mouseGlobal = false;
 	static float f = 0.0f;
@@ -366,15 +374,13 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 	{
 		if (index < 0) index = 0;
 		if (index > mVDTextures->getFboCount() - 1) index = mVDTextures->getFboCount() - 1;
-		int rtn = mVDTextures->loadPixelFragmentShaderAtIndex(index, mFile );
+		int rtn = mVDTextures->loadPixelFragmentShaderAtIndex(index, mFile);
 		if (rtn > -1 && rtn < mVDShaders->getCount())
 		{
-			
+
 			// reset zoom
 			mVDSettings->controlValues[22] = 1.0f;
-			
-			// save thumb
-			timeline().apply(&mSaveThumbTimer, 1.0f, 1.0f).finishFn([&]{ saveThumb(); });
+
 		}
 	}
 	else if (ext == "xml")
@@ -394,22 +400,7 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 	}
 
 }
-void VideodrommControllerApp::saveThumb()
-{
-	/* TODO
-	string filename;
-	try
-	{
-		filename = mVDShaders->getFragFileName() + ".jpg";
-		writeImage(getAssetPath("") / "thumbs" / filename, mVDTextures)->getFboTexture(mParameterBag->mCurrentPreviewFboIndex));
-		CI_LOG_V("saved:" + filename);
 
-	}
-	catch (const std::exception &e)
-	{
-		CI_LOG_V("unable to save:" + filename + string(e.what()));
-	}*/
-}
 // Render the scene into the FBO
 void VideodrommControllerApp::renderSceneToFbo()
 {
@@ -431,7 +422,16 @@ void VideodrommControllerApp::renderSceneToFbo()
 	int i = 0;
 	// iterate over the warps and draw their content
 	for (auto &warp : mWarps) {
-		warp->draw(mVDTextures->getFboTexture(imgSeqFboIndex), mVDTextures->getFboTexture(imgSeqFboIndex)->getBounds());
+		if (textFboIndex != 0) {
+			warp->draw(mVDTextures->getFboTexture(textFboIndex), mVDTextures->getFboTexture(textFboIndex)->getBounds());
+		}
+		else if (imgSeqFboIndex != 0){
+			warp->draw(mVDTextures->getFboTexture(imgSeqFboIndex), mVDTextures->getFboTexture(imgSeqFboIndex)->getBounds());
+		}
+		else {
+			warp->draw(mVDTextures->getFboTexture(0), mVDTextures->getFboTexture(0)->getBounds());
+
+		}
 	}
 }
 void VideodrommControllerApp::drawRenderWindow()
@@ -459,7 +459,7 @@ void VideodrommControllerApp::renderUIToFbo()
 	gl::ScopedViewport scpVp(ivec2(0), ivec2(mVDSettings->mFboWidth * mVDSettings->mUIZoom, mVDSettings->mFboHeight * mVDSettings->mUIZoom));
 	gl::clear();
 	gl::color(Color::white());
-	gl::setMatricesWindow(500, 400);
+	// 0403 ??? gl::setMatricesWindow(500, 400);
 	// imgui
 	static int currentWindowRow1 = 0;
 	static int currentWindowRow2 = 0;
@@ -470,21 +470,21 @@ void VideodrommControllerApp::renderUIToFbo()
 
 #pragma region Info
 
-	ui::SetNextWindowSize(ImVec2(1000, 100), ImGuiSetCond_Once);
+	ui::SetNextWindowSize(ImVec2(mVDSettings->mFboWidth, largePreviewH), ImGuiSetCond_Once);
 	ui::SetNextWindowPos(ImVec2(xPos, margin), ImGuiSetCond_Once);
 	sprintf_s(buf, "Videodromm Fps %c %d###fps", "|/-\\"[(int)(ImGui::GetTime() / 0.25f) & 3], (int)mVDSettings->iFps);
 	ui::Begin(buf);
 	{
 		ImGui::PushItemWidth(mVDSettings->mPreviewFboWidth);
+		ImGui::RadioButton("Audio", &currentWindowRow1, 0); ImGui::SameLine();
+		ImGui::RadioButton("Midi", &currentWindowRow1, 1); ImGui::SameLine();
+		ImGui::RadioButton("Chn", &currentWindowRow1, 2); ui::SameLine();
+		ImGui::RadioButton("Blend", &currentWindowRow1, 3); ui::SameLine();
 
 		ImGui::RadioButton("Textures", &currentWindowRow2, 0); ImGui::SameLine();
 		ImGui::RadioButton("Fbos", &currentWindowRow2, 1); ImGui::SameLine();
-		ImGui::RadioButton("Shaders", &currentWindowRow2, 2); ImGui::SameLine();
+		ImGui::RadioButton("Shaders", &currentWindowRow2, 2);
 
-		ImGui::RadioButton("Osc", &currentWindowRow3, 0); ImGui::SameLine();
-		ImGui::RadioButton("Midi", &currentWindowRow3, 1); ImGui::SameLine();
-		ImGui::RadioButton("Chn", &currentWindowRow3, 2); ui::SameLine();
-		ImGui::RadioButton("Blend", &currentWindowRow3, 3); ui::SameLine();
 
 		if (ui::Button("Save Params"))
 		{
@@ -493,10 +493,8 @@ void VideodrommControllerApp::renderUIToFbo()
 			// save params
 			mVDSettings->save();
 		}
-		ui::SameLine();
 
 		ui::Text("Msg: %s", mVDSettings->mMsg.c_str());
-#pragma region Audio
 
 		if (ui::Button("x##spdx")) { mVDSettings->iSpeedMultiplier = 1.0; }
 		ui::SameLine();
@@ -533,27 +531,6 @@ void VideodrommControllerApp::renderUIToFbo()
 		//void Batchass::setTimeFactor(const int &aTimeFactor)
 		ui::SliderFloat("time x", &mVDAnimation->iTimeFactor, 0.0001f, 1.0f, "%.01f");
 		ui::SameLine();
-
-		static ImVector<float> timeValues; if (timeValues.empty()) { timeValues.resize(40); memset(&timeValues.front(), 0, timeValues.size()*sizeof(float)); }
-		static int timeValues_offset = 0;
-		// audio maxVolume
-		static float tRefresh_time = -1.0f;
-		if (ui::GetTime() > tRefresh_time + 1.0f / 20.0f)
-		{
-			tRefresh_time = ui::GetTime();
-			timeValues[timeValues_offset] = mVDSettings->maxVolume;
-			timeValues_offset = (timeValues_offset + 1) % timeValues.size();
-		}
-
-		ui::SliderFloat("mult x", &mVDSettings->controlValues[13], 0.01f, 10.0f);
-		ui::SameLine();
-		ImGui::PlotHistogram("Histogram", mVDAudio->getSmallSpectrum(), 7, 0, NULL, 0.0f, 255.0f, ImVec2(0, 30));
-		ui::SameLine();
-
-		if (mVDSettings->maxVolume > 240.0) ui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
-		ui::PlotLines("Volume", &timeValues.front(), (int)timeValues.size(), timeValues_offset, toString(mVDUtils->formatFloat(mVDSettings->maxVolume)).c_str(), 0.0f, 255.0f, ImVec2(0, 30));
-		if (mVDSettings->maxVolume > 240.0) ui::PopStyleColor();
-		ui::SameLine();
 		// fps
 		static ImVector<float> values; if (values.empty()) { values.resize(100); memset(&values.front(), 0, values.size()*sizeof(float)); }
 		static int values_offset = 0;
@@ -565,23 +542,140 @@ void VideodrommControllerApp::renderUIToFbo()
 			values_offset = (values_offset + 1) % values.size();
 		}
 		if (mVDSettings->iFps < 12.0) ui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
-		ui::PlotLines("FPS", &values.front(), (int)values.size(), values_offset, mVDSettings->sFps.c_str(), 0.0f, 300.0f, ImVec2(0, 30));
+		ui::PlotLines("FPS", &values.front(), (int)values.size(), values_offset, mVDSettings->sFps.c_str(), 0.0f, mVDSession->getTargetFps(), ImVec2(0, 30));
 		if (mVDSettings->iFps < 12.0) ui::PopStyleColor();
-
-
-#pragma endregion Audio
 
 		ui::PopItemWidth();
 	}
 	ui::End();
-	xPos = margin + 1000;
 
 #pragma endregion Info
+	switch (currentWindowRow1) {
+	case 0:
+		// Audio
+#pragma region Audio
+		ui::SetNextWindowSize(ImVec2(largePreviewW + 20, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
+		ui::Begin("Audio");
+		{
+			static ImVector<float> timeValues; if (timeValues.empty()) { timeValues.resize(40); memset(&timeValues.front(), 0, timeValues.size()*sizeof(float)); }
+			static int timeValues_offset = 0;
+			// audio maxVolume
+			static float tRefresh_time = -1.0f;
+			if (ui::GetTime() > tRefresh_time + 1.0f / 20.0f)
+			{
+				tRefresh_time = ui::GetTime();
+				timeValues[timeValues_offset] = mVDSettings->maxVolume;
+				timeValues_offset = (timeValues_offset + 1) % timeValues.size();
+			}
 
+			ui::SliderFloat("mult x", &mVDSettings->controlValues[13], 0.01f, 10.0f);
+			
+			ImGui::PlotHistogram("Histogram", mVDAudio->getSmallSpectrum(), 7, 0, NULL, 0.0f, 255.0f, ImVec2(0, 30));
+
+			if (mVDSettings->maxVolume > 240.0) ui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+			ui::PlotLines("Volume", &timeValues.front(), (int)timeValues.size(), timeValues_offset, toString(mVDUtils->formatFloat(mVDSettings->maxVolume)).c_str(), 0.0f, 255.0f, ImVec2(0, 30));
+			if (mVDSettings->maxVolume > 240.0) ui::PopStyleColor();
+		}
+		ui::End();
+
+#pragma endregion Audio	
+		break;
+	case 1:
+		// Midi
+#pragma region MIDI
+
+		ui::SetNextWindowSize(ImVec2(largePreviewW + 20, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
+		ui::Begin("MIDI");
+		{
+			sprintf_s(buf, "Enable");
+			if (ui::Button(buf)) mVDRouter->midiSetup();
+			if (ui::CollapsingHeader("MidiIn", "20", true, true))
+			{
+				ui::Columns(2, "data", true);
+				ui::Text("Name"); ui::NextColumn();
+				ui::Text("Connect"); ui::NextColumn();
+				ui::Separator();
+
+				for (int i = 0; i < mVDRouter->getMidiInPortsCount(); i++)
+				{
+					ui::Text(mVDRouter->getMidiInPortName(i).c_str()); ui::NextColumn();
+
+					if (mVDRouter->isMidiInConnected(i))
+					{
+						sprintf_s(buf, "Disconnect %d", i);
+					}
+					else
+					{
+						sprintf_s(buf, "Connect %d", i);
+					}
+
+					if (ui::Button(buf))
+					{
+						if (mVDRouter->isMidiInConnected(i))
+						{
+							mVDRouter->closeMidiInPort(i);
+						}
+						else
+						{
+							mVDRouter->openMidiInPort(i);
+						}
+					}
+					ui::NextColumn();
+					ui::Separator();
+				}
+				ui::Columns(1);
+			}
+		}
+		ui::End();
+#pragma endregion MIDI
+		break;
+	case 2:
+		// Channels
+
+#pragma region channels
+		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
+
+		ui::Begin("Channels");
+		{
+			ui::Columns(3);
+			ui::SetColumnOffset(0, 4.0f);// int column_index, float offset)
+			ui::SetColumnOffset(1, 20.0f);// int column_index, float offset)
+			//ui::SetColumnOffset(2, 24.0f);// int column_index, float offset)
+			ui::Text("Chn"); ui::NextColumn();
+			ui::Text("Tex"); ui::NextColumn();
+			ui::Text("Name"); ui::NextColumn();
+			ui::Separator();
+			for (int i = 0; i < mVDSettings->MAX - 1; i++)
+			{
+				ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
+				ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
+				ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
+				ui::Text("c%d", i);
+				ui::NextColumn();
+				sprintf_s(buf, "%d", i);
+				if (ui::SliderInt(buf, &mVDSettings->iChannels[i], 0, mVDSettings->MAX - 1)) {
+				}
+				ui::NextColumn();
+				ui::PopStyleColor(3);
+				ui::Text("%s", mVDTextures->getTextureName(mVDSettings->iChannels[i]));
+				ui::NextColumn();
+			}
+			ui::Columns(1);
+		}
+		ui::End();
+
+
+#pragma endregion channels
+		break;
+	}
+	
 #pragma region Global
 
 	ui::SetNextWindowSize(ImVec2(largeW, displayHeight), ImGuiSetCond_Once);
-	ui::SetNextWindowPos(ImVec2(xPos, margin), ImGuiSetCond_Once);
+	ui::SetNextWindowPos(ImVec2(xPosCol2, margin), ImGuiSetCond_Once);
 	ui::Begin("Animation");
 	{
 		ImGui::PushItemWidth(mVDSettings->mPreviewFboWidth);
@@ -1028,21 +1122,21 @@ void VideodrommControllerApp::renderUIToFbo()
 					{
 						mVDTextures->inputTexturePlayPauseSequence(i);
 					}
-						if (ui::IsItemHovered()) ui::SetTooltip("Play/Pause");
+					if (ui::IsItemHovered()) ui::SetTooltip("Play/Pause");
 					ui::SameLine();
 					sprintf_s(buf, "b##s%d", i);
 					if (ui::Button(buf))
 					{
 						mVDTextures->inputTextureSyncToBeatSequence(i);
 					}
-						if (ui::IsItemHovered()) ui::SetTooltip("Sync to beat");
+					if (ui::IsItemHovered()) ui::SetTooltip("Sync to beat");
 					ui::SameLine();
 					sprintf_s(buf, "r##s%d", i);
 					if (ui::Button(buf))
 					{
 						mVDTextures->inputTextureReverseSequence(i);
 					}
-						if (ui::IsItemHovered()) ui::SetTooltip("Reverse");
+					if (ui::IsItemHovered()) ui::SetTooltip("Reverse");
 					playheadPositions[i] = mVDTextures->inputTextureGetPlayheadPosition(i);
 					/*sprintf_s(buf, "p%d##s%d", playheadPositions[i], i);
 					if (ui::Button(buf))
@@ -1085,18 +1179,22 @@ void VideodrommControllerApp::renderUIToFbo()
 			ui::Begin(mVDTextures->getTextureName(i).c_str(), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 			{
 
-				//ui::PushID(i);
+				ui::PushID(i);
 				ui::Image((void*)mVDTextures->getFboTextureId(i), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
-				/*ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
+				ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
 				ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
 				ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
 
 				sprintf_s(buf, "FV##fbo%d", i);
 				if (ui::Button(buf)) mVDTextures->flipFboV(i);
 				if (ui::IsItemHovered()) ui::SetTooltip("Flip vertically");
+				ui::SameLine();
+				sprintf_s(buf, "S##fbo%d", i);
+				if (ui::Button(buf)) mVDTextures->saveThumb(i);
+				if (ui::IsItemHovered()) ui::SetTooltip("Save thumb");
 
 				ui::PopStyleColor(3);
-				ui::PopID();*/
+				ui::PopID();
 			}
 			ui::End();
 		}
@@ -1110,26 +1208,6 @@ void VideodrommControllerApp::renderUIToFbo()
 #pragma region library
 		mVDSettings->mRenderThumbs = true;
 
-		/*static ImGuiTextFilter filter;
-		ui::SetNextWindowSize(ImVec2(w, h));
-		ui::SetNextWindowPos(ImVec2(800, 240));
-		ui::Begin("Filter", NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-		{
-		ui::Text("Filter usage:\n"
-		"  \"\"         display all lines\n"
-		"  \"xxx\"      display lines containing \"xxx\"\n"
-		"  \"xxx,yyy\"  display lines containing \"xxx\" or \"yyy\"\n"
-		"  \"-xxx\"     hide lines containing \"xxx\"");
-		filter.Draw();
-
-
-		for (int i = 0; i < mVDShaders->getCount(); i++)
-		{
-		if (filter.PassFilter(mVDShaders->getShader(i).name.c_str()))
-		ui::BulletText("%s", mVDShaders->getShader(i).name.c_str());
-		}
-		}
-		ui::End();*/
 		xPos = margin;
 		yPos = yPosRow2;
 		for (int i = 0; i < mVDShaders->getCount(); i++)
@@ -1137,13 +1215,13 @@ void VideodrommControllerApp::renderUIToFbo()
 			//if (filter.PassFilter(mVDShaders->getShader(i).name.c_str()) && mVDShaders->getShader(i).active)
 			if (mVDShaders->getShader(i).active)
 			{
-				if (mVDSettings->iTrack == i) {
+				/* TODO if (mVDSettings->iTrack == i) {
 					sprintf_s(buf, "SEL ##lsh%d", i);
 				}
 				else {
 					sprintf_s(buf, "%d##lsh%d", mVDShaders->getShader(i).microseconds, i);
-				}
-
+				}*/
+				sprintf_s(buf, "%d##lsh%d", mVDShaders->getShader(i).name, i);
 				ui::SetNextWindowSize(ImVec2(w, h));
 				ui::SetNextWindowPos(ImVec2(xPos + margin, yPos));
 				ui::Begin(buf, NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
@@ -1172,7 +1250,10 @@ void VideodrommControllerApp::renderUIToFbo()
 					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.0f, 0.7f, 0.7f));
 					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.0f, 0.8f, 0.8f));
 					sprintf_s(buf, "L##s%d", i);
-					if (ui::Button(buf)) mVDSettings->mLeftFragIndex = i;// TODO send via OSC? selectShader(true, i);
+					if (ui::Button(buf)) { 
+						mVDSettings->mLeftFragIndex = i;// TODO send via OSC? selectShader(true, i);
+						mVDTextures->setFragForFbo(i, 1); // 2 = right;
+					}
 					if (ui::IsItemHovered()) ui::SetTooltip("Set shader to left");
 					ui::PopStyleColor(3);
 					//ui::NextColumn();
@@ -1189,7 +1270,10 @@ void VideodrommControllerApp::renderUIToFbo()
 					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.3f, 0.7f, 0.7f));
 					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.3f, 0.8f, 0.8f));
 					sprintf_s(buf, "R##s%d", i);
-					if (ui::Button(buf)) mVDSettings->mRightFragIndex = i;// TODO send via OSC? selectShader(false, i);
+					if (ui::Button(buf)) {
+						mVDSettings->mRightFragIndex = i;// TODO send via OSC? selectShader(false, i);
+						mVDTextures->setFragForFbo(i, 2); // 2 = right;
+					}
 					if (ui::IsItemHovered()) ui::SetTooltip("Set shader to right");
 					ui::PopStyleColor(3);
 					//ui::NextColumn();
@@ -1265,105 +1349,8 @@ void VideodrommControllerApp::renderUIToFbo()
 	}
 	xPos = margin;
 	switch (currentWindowRow3) {
-	case 0:
-		// Osc
-		mVDSettings->mRenderThumbs = false;
-		break;
-	case 1:
-		// Midi
-		mVDSettings->mRenderThumbs = false;
-
-#pragma region MIDI
-
-		ui::SetNextWindowSize(ImVec2(largePreviewW + 20, largePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(xPos, yPosRow3), ImGuiSetCond_Once);
-		ui::Begin("MIDI");
-		{
-			sprintf_s(buf, "Enable");
-			if (ui::Button(buf)) mVDRouter->midiSetup();
-			if (ui::CollapsingHeader("MidiIn", "20", true, true))
-			{
-				ui::Columns(2, "data", true);
-				ui::Text("Name"); ui::NextColumn();
-				ui::Text("Connect"); ui::NextColumn();
-				ui::Separator();
-
-				for (int i = 0; i < mVDRouter->getMidiInPortsCount(); i++)
-				{
-					ui::Text(mVDRouter->getMidiInPortName(i).c_str()); ui::NextColumn();
-
-					if (mVDRouter->isMidiInConnected(i))
-					{
-						sprintf_s(buf, "Disconnect %d", i);
-					}
-					else
-					{
-						sprintf_s(buf, "Connect %d", i);
-					}
-
-					if (ui::Button(buf))
-					{
-						if (mVDRouter->isMidiInConnected(i))
-						{
-							mVDRouter->closeMidiInPort(i);
-						}
-						else
-						{
-							mVDRouter->openMidiInPort(i);
-						}
-					}
-					ui::NextColumn();
-					ui::Separator();
-				}
-				ui::Columns(1);
-			}
-		}
-		ui::End();
 
 
-
-#pragma endregion MIDI
-		break;
-	case 2:
-		// Channels
-		mVDSettings->mRenderThumbs = false;
-#pragma region channels
-
-		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(xPos, yPosRow3), ImGuiSetCond_Once);
-
-		ui::Begin("Channels");
-		{
-			ui::Columns(3);
-			ui::SetColumnOffset(0, 4.0f);// int column_index, float offset)
-			ui::SetColumnOffset(1, 20.0f);// int column_index, float offset)
-			//ui::SetColumnOffset(2, 24.0f);// int column_index, float offset)
-			ui::Text("Chn"); ui::NextColumn();
-			ui::Text("Tex"); ui::NextColumn();
-			ui::Text("Name"); ui::NextColumn();
-			ui::Separator();
-			for (int i = 0; i < mVDSettings->MAX - 1; i++)
-			{
-				ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
-				ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
-				ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
-				ui::Text("c%d", i);
-				ui::NextColumn();
-				sprintf_s(buf, "%d", i);
-				if (ui::SliderInt(buf, &mVDSettings->iChannels[i], 0, mVDSettings->MAX - 1)) {
-				}
-				ui::NextColumn();
-				ui::PopStyleColor(3);
-				ui::Text("%s", mVDTextures->getTextureName(mVDSettings->iChannels[i]));
-				ui::NextColumn();
-			}
-			ui::Columns(1);
-		}
-		ui::End();
-
-
-#pragma endregion channels
-		break;
 	case 3:
 		// Blendmodes
 
@@ -1428,53 +1415,69 @@ void VideodrommControllerApp::drawControlWindow()
 #pragma region style
 		// our theme variables
 		ImGuiStyle& style = ui::GetStyle();
-		style.WindowRounding = 4;
+
 		style.WindowPadding = ImVec2(3, 3);
 		style.FramePadding = ImVec2(2, 2);
 		style.ItemSpacing = ImVec2(3, 3);
 		style.ItemInnerSpacing = ImVec2(3, 3);
 		style.WindowMinSize = ImVec2(w, mVDSettings->mPreviewFboHeight);
-		style.Alpha = 0.6f;
-		style.Colors[ImGuiCol_Text] = ImVec4(0.89f, 0.92f, 0.94f, 1.00f);
-		style.Colors[ImGuiCol_WindowBg] = ImVec4(0.05f, 0.05f, 0.05f, 1.00f);
-		style.Colors[ImGuiCol_Border] = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
-		style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.38f);
-		style.Colors[ImGuiCol_FrameBg] = ImVec4(0.18f, 0.18f, 0.18f, 1.00f);
-		style.Colors[ImGuiCol_TitleBg] = ImVec4(0.4f, 0.0f, 0.21f, 1.00f);
-		style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.17f, 0.17f, 0.17f, 1.00f);
-		style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.97f, 0.0f, 0.17f, 1.00f);
-		style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
-		style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
-		style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
-		style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
-		style.Colors[ImGuiCol_ComboBg] = ImVec4(0.13f, 0.13f, 0.13f, 1.00f);
-		style.Colors[ImGuiCol_CheckMark] = ImVec4(0.99f, 0.22f, 0.22f, 0.50f);
-		style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.65f, 0.25f, 0.25f, 1.00f);
-		style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.8f, 0.35f, 0.35f, 1.00f);
-		style.Colors[ImGuiCol_Button] = ImVec4(0.17f, 0.17f, 0.17f, 1.00f);
-		style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.27f, 0.27f, 0.27f, 1.00f);
-		style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.38f, 0.38f, 0.38f, 1.00f);
-		style.Colors[ImGuiCol_Header] = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
-		style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
-		style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.27f, 0.27f, 0.27f, 1.00f);
-		style.Colors[ImGuiCol_Column] = ImVec4(0.04f, 0.04f, 0.04f, 0.22f);
-		style.Colors[ImGuiCol_ColumnHovered] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
-		style.Colors[ImGuiCol_ColumnActive] = ImVec4(0.27f, 0.27f, 0.27f, 1.00f);
-		style.Colors[ImGuiCol_ResizeGrip] = ImVec4(0.65f, 0.25f, 0.25f, 1.00f);
-		style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.8f, 0.35f, 0.35f, 1.00f);
-		style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(0.9f, 0.45f, 0.45f, 1.00f);
-		style.Colors[ImGuiCol_CloseButton] = ImVec4(0.28f, 0.28f, 0.28f, 1.00f);
-		style.Colors[ImGuiCol_CloseButtonHovered] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
-		style.Colors[ImGuiCol_CloseButtonActive] = ImVec4(0.49f, 0.49f, 0.49f, 1.00f);
-		style.Colors[ImGuiCol_PlotLines] = ImVec4(0.65f, 0.25f, 0.25f, 1.00f);
-		style.Colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.8f, 0.35f, 0.35f, 1.00f);
-		style.Colors[ImGuiCol_PlotHistogram] = ImVec4(0.65f, 0.25f, 0.25f, 1.00f);
-		style.Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.8f, 0.35f, 0.35f, 1.00f);
-		style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.24f, 0.24f, 0.24f, 1.00f);
-		style.Colors[ImGuiCol_TooltipBg] = ImVec4(0.65f, 0.25f, 0.25f, 1.00f);
+		// new style
+		style.Alpha = 1.0;
+		style.WindowFillAlphaDefault = 0.83;
+		style.ChildWindowRounding = 3;
+		style.WindowRounding = 3;
+		//style.GrabRounding = 1;
+		//style.GrabMinSize = 20;
+		style.FrameRounding = 3;
+
+
+		style.Colors[ImGuiCol_Text] = ImVec4(0.00f, 1.00f, 1.00f, 1.00f);
+		style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.00f, 0.40f, 0.41f, 1.00f);
+		style.Colors[ImGuiCol_WindowBg] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+		style.Colors[ImGuiCol_ChildWindowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+		style.Colors[ImGuiCol_Border] = ImVec4(0.00f, 1.00f, 1.00f, 0.65f);
+		style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+		style.Colors[ImGuiCol_FrameBg] = ImVec4(0.44f, 0.80f, 0.80f, 0.18f);
+		style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.44f, 0.80f, 0.80f, 0.27f);
+		style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.44f, 0.81f, 0.86f, 0.66f);
+		style.Colors[ImGuiCol_TitleBg] = ImVec4(0.14f, 0.18f, 0.21f, 0.73f);
+		style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.00f, 0.00f, 0.54f);
+		style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.00f, 1.00f, 1.00f, 0.27f);
+		style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.20f);
+		style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.22f, 0.29f, 0.30f, 0.71f);
+		style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.00f, 1.00f, 1.00f, 0.44f);
+		style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.00f, 1.00f, 1.00f, 0.74f);
+		style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.00f, 1.00f, 1.00f, 1.00f);
+		style.Colors[ImGuiCol_ComboBg] = ImVec4(0.16f, 0.24f, 0.22f, 0.60f);
+		style.Colors[ImGuiCol_CheckMark] = ImVec4(0.00f, 1.00f, 1.00f, 0.68f);
+		style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.00f, 1.00f, 1.00f, 0.36f);
+		style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.00f, 1.00f, 1.00f, 0.76f);
+		style.Colors[ImGuiCol_Button] = ImVec4(0.00f, 0.65f, 0.65f, 0.46f);
+		style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.01f, 1.00f, 1.00f, 0.43f);
+		style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.00f, 1.00f, 1.00f, 0.62f);
+		style.Colors[ImGuiCol_Header] = ImVec4(0.00f, 1.00f, 1.00f, 0.33f);
+		style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.00f, 1.00f, 1.00f, 0.42f);
+		style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.00f, 1.00f, 1.00f, 0.54f);
+		style.Colors[ImGuiCol_Column] = ImVec4(0.00f, 0.50f, 0.50f, 0.33f);
+		style.Colors[ImGuiCol_ColumnHovered] = ImVec4(0.00f, 0.50f, 0.50f, 0.47f);
+		style.Colors[ImGuiCol_ColumnActive] = ImVec4(0.00f, 0.70f, 0.70f, 1.00f);
+		style.Colors[ImGuiCol_ResizeGrip] = ImVec4(0.00f, 1.00f, 1.00f, 0.54f);
+		style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.00f, 1.00f, 1.00f, 0.74f);
+		style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(0.00f, 1.00f, 1.00f, 1.00f);
+		style.Colors[ImGuiCol_CloseButton] = ImVec4(0.00f, 0.78f, 0.78f, 0.35f);
+		style.Colors[ImGuiCol_CloseButtonHovered] = ImVec4(0.00f, 0.78f, 0.78f, 0.47f);
+		style.Colors[ImGuiCol_CloseButtonActive] = ImVec4(0.00f, 0.78f, 0.78f, 1.00f);
+		style.Colors[ImGuiCol_PlotLines] = ImVec4(0.00f, 1.00f, 1.00f, 1.00f);
+		style.Colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.00f, 1.00f, 1.00f, 1.00f);
+		style.Colors[ImGuiCol_PlotHistogram] = ImVec4(0.00f, 1.00f, 1.00f, 1.00f);
+		style.Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.00f, 1.00f, 1.00f, 1.00f);
+		style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.00f, 1.00f, 1.00f, 0.22f);
+		style.Colors[ImGuiCol_TooltipBg] = ImVec4(0.00f, 0.13f, 0.13f, 0.90f);
+		style.Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(0.04f, 0.10f, 0.09f, 0.51f);
 #pragma endregion style
 
 	}
+
 	renderUIToFbo();
 	gl::clear(Color::black());
 	gl::draw(mUIFbo->getColorTexture(), Rectf(128, 0, 256, 128)); // TODO CHECK

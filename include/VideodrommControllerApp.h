@@ -52,7 +52,7 @@ public:
 	void update() override;
 	void drawRenderWindow();
 	void drawControlWindow();
-	void saveThumb();
+
 	void fileDrop(FileDropEvent event) override;
 	//void resize() override;
 	void resizeWindow();
@@ -89,6 +89,7 @@ private:
 	// Textures
 	VDTexturesRef				mVDTextures;
 	int							imgSeqFboIndex;
+	int							textFboIndex;
 	// Fbos
 	//vector<VDFboRef>			mVDFbos;
 	// window mgmt
@@ -104,6 +105,9 @@ private:
 	int							h;
 	int							displayHeight;
 	int							xPos;
+	int							xPosCol1;
+	int							xPosCol2;
+	int							xPosCol3;
 	int							yPos;
 	int							yPosRow1;
 	int							yPosRow2;

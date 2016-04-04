@@ -98,6 +98,8 @@ void VideodrommControllerApp::setup()
 	// warping
 	gl::enableDepthRead();
 	gl::enableDepthWrite();
+	// fonts ?
+	//gl::enableAlphaBlending(false);
 	// initialize warps
 	mWarpSettings = getAssetPath("") / mVDSettings->mAssetsPath / "warps.xml";
 	if (fs::exists(mWarpSettings)) {
@@ -417,7 +419,6 @@ void VideodrommControllerApp::renderSceneToFbo()
 	//mVDTextures->draw();
 	//gl::color(Color::white());
 	gl::draw(mVDTextures->getFboTexture(0));
-
 
 	int i = 0;
 	// iterate over the warps and draw their content

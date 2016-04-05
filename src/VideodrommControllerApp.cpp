@@ -827,8 +827,8 @@ void VideodrommControllerApp::renderUIToFbo()
 			ui::Text("Beat %d ", mVDSettings->iBeat);
 			ui::SameLine();
 			ui::Text("Beat Idx %d ", mVDAnimation->iBeatIndex);
-ui::SameLine();
-			ui::Text("Bar %d ", mVDAnimation->iBar);
+//ui::SameLine();
+			//ui::Text("Bar %d ", mVDAnimation->iBar);
 			
 
 			if (ui::Button("x##bpbx")) { mVDSession->iBeatsPerBar = 1; }

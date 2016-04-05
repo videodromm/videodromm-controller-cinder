@@ -147,7 +147,7 @@ void VideodrommControllerApp::setup()
 	yPosRow2 = yPosRow1 + largePreviewH + margin;
 	yPosRow3 = yPosRow2 + h*1.4 + margin;
 	xPosCol1 = mVDSettings->mFboWidth + margin;
-	xPosCol2 = xPosCol1 + margin + w * 2;
+	xPosCol2 = xPosCol1 + margin + largeW;
 	xPosCol3 = xPosCol2 + margin;
 
 	mouseGlobal = false;
@@ -473,7 +473,7 @@ void VideodrommControllerApp::renderUIToFbo()
 
 	ui::SetNextWindowSize(ImVec2(mVDSettings->mFboWidth, largePreviewH), ImGuiSetCond_Once);
 	ui::SetNextWindowPos(ImVec2(xPos, margin), ImGuiSetCond_Once);
-	sprintf_s(buf, "Videodromm Fps %c %d###fps (target %.2f)", "|/-\\"[(int)(ImGui::GetTime() / 0.25f) & 3], (int)mVDSettings->iFps, mVDSession->getTargetFps());
+	sprintf_s(buf, "Videodromm Fps %c %d (target %.2f)###fps", "|/-\\"[(int)(ImGui::GetTime() / 0.25f) & 3], (int)mVDSettings->iFps, mVDSession->getTargetFps());
 	ui::Begin(buf);
 	{
 		ImGui::PushItemWidth(mVDSettings->mPreviewFboWidth);
@@ -490,20 +490,6 @@ void VideodrommControllerApp::renderUIToFbo()
 		ImGui::RadioButton("Fbos", &currentWindowRow2, 1); ImGui::SameLine();
 		ImGui::RadioButton("Shaders", &currentWindowRow2, 2);
 
-
-		if (ui::Button("Save Params"))
-		{
-			// save warp settings
-			Warp::writeSettings(mWarps, writeFile("warps1.xml"));
-			// save params
-			mVDSettings->save();
-		}
-
-		ui::Text("Msg: %s", mVDSettings->mMsg.c_str());
-
-		mVDSettings->iDebug ^= ui::Button("Debug");
-		ui::SameLine();
-
 		// fps
 		static ImVector<float> values; if (values.empty()) { values.resize(100); memset(&values.front(), 0, values.size()*sizeof(float)); }
 		static int values_offset = 0;
@@ -519,6 +505,20 @@ void VideodrommControllerApp::renderUIToFbo()
 		if (mVDSettings->iFps < 12.0) ui::PopStyleColor();
 
 		ui::PopItemWidth();
+		//ui::SameLine();
+		//ui::Text("Target fps: %d", mVDSession->getTargetFps());
+
+		mVDSettings->iDebug ^= ui::Button("Debug");
+		ui::SameLine();
+		if (ui::Button("Save Params"))
+		{
+			// save warp settings
+			Warp::writeSettings(mWarps, writeFile("warps1.xml"));
+			// save params
+			mVDSettings->save();
+		}
+		ui::Text("Msg: %s", mVDSettings->mMsg.c_str());
+
 	}
 	ui::End();
 
@@ -527,7 +527,7 @@ void VideodrommControllerApp::renderUIToFbo()
 	case 0:
 		// Audio
 #pragma region Audio
-		ui::SetNextWindowSize(ImVec2(largePreviewW + 20, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
 		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
 		ui::Begin("Audio");
 		{
@@ -558,7 +558,7 @@ void VideodrommControllerApp::renderUIToFbo()
 		// Midi
 #pragma region MIDI
 
-		ui::SetNextWindowSize(ImVec2(largePreviewW + 20, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
 		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
 		ui::Begin("MIDI");
 		{
@@ -608,7 +608,7 @@ void VideodrommControllerApp::renderUIToFbo()
 		// Channels
 
 #pragma region channels
-		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
 		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
 
 		ui::Begin("Channels");
@@ -646,7 +646,7 @@ void VideodrommControllerApp::renderUIToFbo()
 	case 3:
 		// Mouse
 #pragma region mouse
-		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
 		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
 
 		ui::Begin("Mouse");
@@ -676,7 +676,7 @@ void VideodrommControllerApp::renderUIToFbo()
 	case 4:
 		// Effects
 #pragma region effects
-		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
 		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
 
 		ui::Begin("Effects");
@@ -742,7 +742,7 @@ void VideodrommControllerApp::renderUIToFbo()
 	case 5:
 		// Color
 #pragma region Color
-		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
 		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
 
 		ui::Begin("Color");
@@ -815,21 +815,21 @@ void VideodrommControllerApp::renderUIToFbo()
 	case 6:
 		// Tempo
 #pragma region Tempo
-		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
 		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
 
 		ui::Begin("Tempo");
 		{
 			if (ui::Button("x##spdx")) { mVDSettings->iSpeedMultiplier = 1.0; }
-
+			ui::SameLine();
 			ui::SliderFloat("speed x", &mVDSettings->iSpeedMultiplier, 0.01f, 5.0f, "%.1f");
 	
 			ui::Text("Beat %d ", mVDSettings->iBeat);
 			ui::SameLine();
 			ui::Text("Beat Idx %d ", mVDAnimation->iBeatIndex);
-
+ui::SameLine();
 			ui::Text("Bar %d ", mVDAnimation->iBar);
-			ui::SameLine();
+			
 
 			if (ui::Button("x##bpbx")) { mVDSession->iBeatsPerBar = 1; }
 			ui::SameLine();
@@ -862,7 +862,7 @@ void VideodrommControllerApp::renderUIToFbo()
 	case 7:
 		// Blend
 #pragma region Blend
-		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
 		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
 
 		ui::Begin("Blend");

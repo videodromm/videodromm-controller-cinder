@@ -473,14 +473,18 @@ void VideodrommControllerApp::renderUIToFbo()
 
 	ui::SetNextWindowSize(ImVec2(mVDSettings->mFboWidth, largePreviewH), ImGuiSetCond_Once);
 	ui::SetNextWindowPos(ImVec2(xPos, margin), ImGuiSetCond_Once);
-	sprintf_s(buf, "Videodromm Fps %c %d###fps", "|/-\\"[(int)(ImGui::GetTime() / 0.25f) & 3], (int)mVDSettings->iFps);
+	sprintf_s(buf, "Videodromm Fps %c %d###fps (target %.2f)", "|/-\\"[(int)(ImGui::GetTime() / 0.25f) & 3], (int)mVDSettings->iFps, mVDSession->getTargetFps());
 	ui::Begin(buf);
 	{
 		ImGui::PushItemWidth(mVDSettings->mPreviewFboWidth);
 		ImGui::RadioButton("Audio", &currentWindowRow1, 0); ImGui::SameLine();
 		ImGui::RadioButton("Midi", &currentWindowRow1, 1); ImGui::SameLine();
 		ImGui::RadioButton("Chn", &currentWindowRow1, 2); ui::SameLine();
-		ImGui::RadioButton("Blend", &currentWindowRow1, 3); ui::SameLine();
+		ImGui::RadioButton("Mouse", &currentWindowRow1, 3); ui::SameLine();
+		ImGui::RadioButton("Effects", &currentWindowRow1, 4); ui::SameLine();
+		ImGui::RadioButton("Color", &currentWindowRow1, 5); ui::SameLine();
+		ImGui::RadioButton("Tempo", &currentWindowRow1, 6); ui::SameLine();
+		ImGui::RadioButton("Blend", &currentWindowRow1, 7); 
 
 		ImGui::RadioButton("Textures", &currentWindowRow2, 0); ImGui::SameLine();
 		ImGui::RadioButton("Fbos", &currentWindowRow2, 1); ImGui::SameLine();
@@ -497,41 +501,9 @@ void VideodrommControllerApp::renderUIToFbo()
 
 		ui::Text("Msg: %s", mVDSettings->mMsg.c_str());
 
-		if (ui::Button("x##spdx")) { mVDSettings->iSpeedMultiplier = 1.0; }
-		ui::SameLine();
-		ui::SliderFloat("speed x", &mVDSettings->iSpeedMultiplier, 0.01f, 5.0f, "%.1f");
-		ui::SameLine();
-		ui::Text("Beat %d ", mVDSettings->iBeat);
-		ui::SameLine();
-		ui::Text("Beat Idx %d ", mVDAnimation->iBeatIndex);
-		ui::SameLine();
-		ui::Text("Bar %d ", mVDAnimation->iBar);
-		ui::SameLine();
-
-		if (ui::Button("x##bpbx")) { mVDSession->iBeatsPerBar = 1; }
-		ui::SameLine();
-		ui::SliderInt("beats per bar", &mVDSession->iBeatsPerBar, 1, 8);
-
-		ui::SameLine();
-		ui::Text("Time %.2f", mVDSettings->iGlobalTime);
-		ui::SameLine();
-		ui::Text("Trk %s %.2f", mVDSettings->mTrackName.c_str(), mVDSettings->liveMeter);
-		//			ui::Checkbox("Playing", &mVDSettings->mIsPlaying);
-		ui::SameLine();
 		mVDSettings->iDebug ^= ui::Button("Debug");
 		ui::SameLine();
 
-		ui::Text("Tempo %.2f ", mVDSession->getBpm());
-		ui::Text("Target FPS %.2f ", mVDSession->getTargetFps());
-		ui::SameLine();
-		if (ui::Button("Tap tempo")) { mVDAnimation->tapTempo(); }
-		ui::SameLine();
-		if (ui::Button("Time tempo")) { mVDAnimation->mUseTimeWithTempo = !mVDAnimation->mUseTimeWithTempo; }
-		ui::SameLine();
-
-		//void Batchass::setTimeFactor(const int &aTimeFactor)
-		ui::SliderFloat("time x", &mVDAnimation->iTimeFactor, 0.0001f, 1.0f, "%.01f");
-		ui::SameLine();
 		// fps
 		static ImVector<float> values; if (values.empty()) { values.resize(100); memset(&values.front(), 0, values.size()*sizeof(float)); }
 		static int values_offset = 0;
@@ -671,19 +643,15 @@ void VideodrommControllerApp::renderUIToFbo()
 
 #pragma endregion channels
 		break;
-	}
-	
-#pragma region Global
+	case 3:
+		// Mouse
+#pragma region mouse
+		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
 
-	ui::SetNextWindowSize(ImVec2(largeW, displayHeight), ImGuiSetCond_Once);
-	ui::SetNextWindowPos(ImVec2(xPosCol2, margin), ImGuiSetCond_Once);
-	ui::Begin("Animation");
-	{
-		ImGui::PushItemWidth(mVDSettings->mPreviewFboWidth);
-
-		if (ui::CollapsingHeader("Mouse", NULL, true, true))
+		ui::Begin("Mouse");
 		{
-			ui::Text("Mouse Position: (%.1f,%.1f)", ui::GetIO().MousePos.x, ui::GetIO().MousePos.y); ui::SameLine();
+			ui::Text("Position: %.1f,%.1f", ui::GetIO().MousePos.x, ui::GetIO().MousePos.y);
 			ui::Text("Clic %d", ui::GetIO().MouseDown[0]);
 			mouseGlobal ^= ui::Button("mouse gbl");
 			if (mouseGlobal)
@@ -698,10 +666,20 @@ void VideodrommControllerApp::renderUIToFbo()
 				mVDSettings->iMouse.z = ui::Button("mouse click");
 			}
 			ui::SliderFloat("MouseX", &mVDSettings->mRenderPosXY.x, 0, mVDSettings->mFboWidth);
-			ui::SliderFloat("MouseY", &mVDSettings->mRenderPosXY.y, 0, 2048);// mVDSettings->mFboHeight);
-
+			ui::SliderFloat("MouseY", &mVDSettings->mRenderPosXY.y, 0, mVDSettings->mFboHeight);
 		}
-		if (ui::CollapsingHeader("Effects", NULL, true, true))
+		ui::End();
+
+
+#pragma endregion mouse
+		break;
+	case 4:
+		// Effects
+#pragma region effects
+		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
+
+		ui::Begin("Effects");
 		{
 			int hue = 0;
 
@@ -719,7 +697,6 @@ void VideodrommControllerApp::renderUIToFbo()
 			if (ui::Button("glitch")) { mVDSettings->controlValues[45] = !mVDSettings->controlValues[45]; }
 			ui::PopStyleColor(3);
 			hue++;
-			ui::SameLine();
 
 			(mVDSettings->controlValues[46]) ? ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(hue / 7.0f, 1.0f, 0.5f)) : ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(1.0f, 0.1f, 0.1f));
 			ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(hue / 7.0f, 0.7f, 0.7f));
@@ -750,7 +727,6 @@ void VideodrommControllerApp::renderUIToFbo()
 			mVDSettings->iGreyScale ^= ui::Button("greyscale");
 			ui::PopStyleColor(3);
 			hue++;
-			ui::SameLine();
 
 			if (ui::Button("blackout"))
 			{
@@ -758,6 +734,159 @@ void VideodrommControllerApp::renderUIToFbo()
 				mVDSettings->controlValues[5] = mVDSettings->controlValues[6] = mVDSettings->controlValues[7] = mVDSettings->controlValues[8] = 0.0;
 			}
 		}
+		ui::End();
+
+
+#pragma endregion effects
+		break;
+	case 5:
+		// Color
+#pragma region Color
+		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
+
+		ui::Begin("Color");
+		{
+			stringstream sParams;
+			bool colorChanged = false;
+			sParams << "{\"params\" :[{\"name\" : 0,\"value\" : " << getElapsedFrames() << "}"; // TimeStamp
+			// foreground color
+			color[0] = mVDSettings->controlValues[1];
+			color[1] = mVDSettings->controlValues[2];
+			color[2] = mVDSettings->controlValues[3];
+			color[3] = mVDSettings->controlValues[4];
+			ui::ColorEdit4("f", color);
+
+			for (int i = 0; i < 4; i++)
+			{
+				if (mVDSettings->controlValues[i + 1] != color[i])
+				{
+					sParams << ",{\"name\" : " << i + 1 << ",\"value\" : " << color[i] << "}";
+					mVDSettings->controlValues[i + 1] = color[i];
+					colorChanged = true;
+				}
+			}
+			if (colorChanged) mVDRouter->colorWrite(); //lights4events
+
+			// background color
+			backcolor[0] = mVDSettings->controlValues[5];
+			backcolor[1] = mVDSettings->controlValues[6];
+			backcolor[2] = mVDSettings->controlValues[7];
+			backcolor[3] = mVDSettings->controlValues[8];
+			ui::ColorEdit4("g", backcolor);
+			for (int i = 0; i < 4; i++)
+			{
+				if (mVDSettings->controlValues[i + 5] != backcolor[i])
+				{
+					sParams << ",{\"name\" : " << i + 5 << ",\"value\" : " << backcolor[i] << "}";
+					mVDSettings->controlValues[i + 5] = backcolor[i];
+				}
+
+			}
+			// color multipliers
+			if (ui::Button("x##RedX")) { mVDSettings->iRedMultiplier = 1.0f; }
+			ui::SameLine();
+			if (ui::SliderFloat("RedX", &mVDSettings->iRedMultiplier, 0.0f, 3.0f))
+			{
+			}
+			if (ui::Button("x##GreenX")) { mVDSettings->iGreenMultiplier = 1.0f; }
+			ui::SameLine();
+			if (ui::SliderFloat("GreenX", &mVDSettings->iGreenMultiplier, 0.0f, 3.0f))
+			{
+			}
+			if (ui::Button("x##BlueX")) { mVDSettings->iBlueMultiplier = 1.0f; }
+			ui::SameLine();
+			if (ui::SliderFloat("BlueX", &mVDSettings->iBlueMultiplier, 0.0f, 3.0f))
+			{
+			}
+
+			sParams << "]}";
+			string strParams = sParams.str();
+			if (strParams.length() > 60)
+			{
+				mVDRouter->sendJSON(strParams);
+			}
+		}
+		ui::End();
+
+
+#pragma endregion Color
+		break;	
+	case 6:
+		// Tempo
+#pragma region Tempo
+		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
+
+		ui::Begin("Tempo");
+		{
+			if (ui::Button("x##spdx")) { mVDSettings->iSpeedMultiplier = 1.0; }
+
+			ui::SliderFloat("speed x", &mVDSettings->iSpeedMultiplier, 0.01f, 5.0f, "%.1f");
+	
+			ui::Text("Beat %d ", mVDSettings->iBeat);
+			ui::SameLine();
+			ui::Text("Beat Idx %d ", mVDAnimation->iBeatIndex);
+
+			ui::Text("Bar %d ", mVDAnimation->iBar);
+			ui::SameLine();
+
+			if (ui::Button("x##bpbx")) { mVDSession->iBeatsPerBar = 1; }
+			ui::SameLine();
+			ui::SliderInt("beats/bar", &mVDSession->iBeatsPerBar, 1, 8);
+
+
+			ui::Text("Time %.2f", mVDSettings->iGlobalTime);
+			ui::SameLine();
+			ui::Text("Trk %s %.2f", mVDSettings->mTrackName.c_str(), mVDSettings->liveMeter);
+			//			ui::Checkbox("Playing", &mVDSettings->mIsPlaying);
+
+			ui::Text("Tempo %.2f ", mVDSession->getBpm());
+
+		
+			if (ui::Button("Tap tempo")) { mVDAnimation->tapTempo(); }
+			
+			if (ui::Button("Time tempo")) { mVDAnimation->mUseTimeWithTempo = !mVDAnimation->mUseTimeWithTempo; }
+		
+
+			//void Batchass::setTimeFactor(const int &aTimeFactor)
+			ui::SliderFloat("time x", &mVDAnimation->iTimeFactor, 0.0001f, 1.0f, "%.01f");
+			ui::SameLine();
+
+		}
+		ui::End();
+
+
+#pragma endregion Tempo
+		break;
+	case 7:
+		// Blend
+#pragma region Blend
+		ui::SetNextWindowSize(ImVec2(w * 2, largePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
+
+		ui::Begin("Blend");
+		{
+			// blend modes
+			if (ui::Button("x##blendmode")) { mVDSettings->iBlendMode = 0.0f; }
+			ui::SameLine();
+			ui::SliderInt("blendmode", &mVDSettings->iBlendMode, 0, mVDAnimation->maxBlendMode);
+
+		}
+		ui::End();
+#pragma endregion Blend
+		break;
+	}
+	
+#pragma region Global
+
+	ui::SetNextWindowSize(ImVec2(largeW, displayHeight), ImGuiSetCond_Once);
+	ui::SetNextWindowPos(ImVec2(xPosCol2, margin), ImGuiSetCond_Once);
+	ui::Begin("Animation");
+	{
+		ImGui::PushItemWidth(mVDSettings->mPreviewFboWidth);
+
+		
 		if (ui::CollapsingHeader("Animation", NULL, true, true))
 		{
 
@@ -864,10 +993,6 @@ void VideodrommControllerApp::renderUIToFbo()
 			}
 			sprintf_s(buf, "XorY");
 			mVDSettings->iXorY ^= ui::Button(buf);
-			// blend modes
-			if (ui::Button("x##blendmode")) { mVDSettings->iBlendMode = 0.0f; }
-			ui::SameLine();
-			ui::SliderInt("blendmode", &mVDSettings->iBlendMode, 0, mVDAnimation->maxBlendMode);
 
 			// steps
 			ctrl = 20;
@@ -911,69 +1036,7 @@ void VideodrommControllerApp::renderUIToFbo()
 			}
 		}
 		ui::PopItemWidth();
-		if (ui::CollapsingHeader("Colors", NULL, true, true))
-		{
-			stringstream sParams;
-			bool colorChanged = false;
-			sParams << "{\"params\" :[{\"name\" : 0,\"value\" : " << getElapsedFrames() << "}"; // TimeStamp
-			// foreground color
-			color[0] = mVDSettings->controlValues[1];
-			color[1] = mVDSettings->controlValues[2];
-			color[2] = mVDSettings->controlValues[3];
-			color[3] = mVDSettings->controlValues[4];
-			ui::ColorEdit4("f", color);
 
-			for (int i = 0; i < 4; i++)
-			{
-				if (mVDSettings->controlValues[i + 1] != color[i])
-				{
-					sParams << ",{\"name\" : " << i + 1 << ",\"value\" : " << color[i] << "}";
-					mVDSettings->controlValues[i + 1] = color[i];
-					colorChanged = true;
-				}
-			}
-			if (colorChanged) mVDRouter->colorWrite(); //lights4events
-
-			// background color
-			backcolor[0] = mVDSettings->controlValues[5];
-			backcolor[1] = mVDSettings->controlValues[6];
-			backcolor[2] = mVDSettings->controlValues[7];
-			backcolor[3] = mVDSettings->controlValues[8];
-			ui::ColorEdit4("g", backcolor);
-			for (int i = 0; i < 4; i++)
-			{
-				if (mVDSettings->controlValues[i + 5] != backcolor[i])
-				{
-					sParams << ",{\"name\" : " << i + 5 << ",\"value\" : " << backcolor[i] << "}";
-					mVDSettings->controlValues[i + 5] = backcolor[i];
-				}
-
-			}
-			// color multipliers
-			if (ui::Button("x##RedX")) { mVDSettings->iRedMultiplier = 1.0f; }
-			ui::SameLine();
-			if (ui::SliderFloat("RedX", &mVDSettings->iRedMultiplier, 0.0f, 3.0f))
-			{
-			}
-			if (ui::Button("x##GreenX")) { mVDSettings->iGreenMultiplier = 1.0f; }
-			ui::SameLine();
-			if (ui::SliderFloat("GreenX", &mVDSettings->iGreenMultiplier, 0.0f, 3.0f))
-			{
-			}
-			if (ui::Button("x##BlueX")) { mVDSettings->iBlueMultiplier = 1.0f; }
-			ui::SameLine();
-			if (ui::SliderFloat("BlueX", &mVDSettings->iBlueMultiplier, 0.0f, 3.0f))
-			{
-			}
-
-			sParams << "]}";
-			string strParams = sParams.str();
-			if (strParams.length() > 60)
-			{
-				mVDRouter->sendJSON(strParams);
-			}
-
-		}
 
 		if (ui::CollapsingHeader("Camera", NULL, true, true))
 		{

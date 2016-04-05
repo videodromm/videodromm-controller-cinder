@@ -1177,7 +1177,8 @@ void VideodrommControllerApp::renderUIToFbo()
 		{
 			ui::SetNextWindowSize(ImVec2(w, h));
 			ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPosRow2));
-			ui::Begin(mVDTextures->getTextureName(i).c_str(), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+			sprintf_s(buf, "%s %d##fsh%d", mVDTextures->getTextureName(i).c_str(), mVDTextures->getMicroSeconds(i), i);
+			ui::Begin(buf, NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 			{
 
 				ui::PushID(i);
@@ -1222,7 +1223,7 @@ void VideodrommControllerApp::renderUIToFbo()
 				else {
 					sprintf_s(buf, "%d##lsh%d", mVDShaders->getShader(i).microseconds, i);
 				}*/
-				sprintf_s(buf, "%d##lsh%d", mVDShaders->getShader(i).name, i);
+				sprintf_s(buf, "%s##lsh%d", mVDShaders->getShader(i).name.c_str(), i);
 				ui::SetNextWindowSize(ImVec2(w, h));
 				ui::SetNextWindowPos(ImVec2(xPos + margin, yPos));
 				ui::Begin(buf, NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);

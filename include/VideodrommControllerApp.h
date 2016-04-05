@@ -32,8 +32,7 @@
 #include "UnionJack.h"
 // spout
 #include "spout.h"
-// hap codec movie
-#include "MovieHap.h"
+
 
 using namespace ci;
 using namespace ci::app;
@@ -124,9 +123,8 @@ private:
 
 	bool						mouseGlobal;
 	// movie
-	qtime::MovieGlHapRef		mMovie;
-	void loadMovieFile(const fs::path &path);
-	bool						mLoopVideo;
+	bool						mMovieDelay;
+
 	// warping
 	gl::TextureRef				mImage;
 	WarpList					mWarps;

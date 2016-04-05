@@ -68,7 +68,7 @@ void VideodrommControllerApp::setup()
 
 
 	setFrameRate(mVDSession->getTargetFps());
-	mFadeInDelay = true;
+	mMovieDelay = mFadeInDelay = true;
 	mIsResizing = true;
 	mVDUtils->getWindowsResolution();
 
@@ -129,8 +129,6 @@ void VideodrommControllerApp::setup()
 	Warp::setSize(mWarps, ivec2(mVDSettings->mFboWidth, mVDSettings->mFboHeight));
 	//Warp::setSize(mWarps, mImage->getSize());
 	mSaveThumbTimer = 0.0f;
-	// movie
-	mLoopVideo = false;
 
 	// imgui
 	margin = 3;
@@ -241,7 +239,7 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 				// toggle warp edit mode
 				Warp::enableEditMode(!Warp::isEditModeEnabled());
 				break;
-			case KeyEvent::KEY_o:
+			/*case KeyEvent::KEY_o:
 				moviePath = getOpenFilePath();
 				if (!moviePath.empty())
 					loadMovieFile(moviePath);
@@ -251,11 +249,11 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 				break;
 			case KeyEvent::KEY_p:
 				if (mMovie) mMovie->play();
-				/*for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
+				for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
 				{
 				(mVDTextures->getInputTexture(i)->playSequence();
-				}*/
-				break;
+				}
+				break;*/
 			case KeyEvent::KEY_LEFT:
 				//for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
 				//{
@@ -277,12 +275,12 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 				//}
 				break;
 			case KeyEvent::KEY_SPACE:
-				if (mMovie) { if (mMovie->isPlaying()) mMovie->stop(); else mMovie->play(); }
+				//if (mMovie) { if (mMovie->isPlaying()) mMovie->stop(); else mMovie->play(); }
 				break;
 			case KeyEvent::KEY_l:
 				mVDAnimation->load();
-				mLoopVideo = !mLoopVideo;
-				if (mMovie) mMovie->setLoop(mLoopVideo);
+				//mLoopVideo = !mLoopVideo;
+				//if (mMovie) mMovie->setLoop(mLoopVideo);
 				break;
 			case KeyEvent::KEY_c:
 				// mouse cursor
@@ -320,23 +318,7 @@ void VideodrommControllerApp::keyUp(KeyEvent event)
 		}
 	}
 }
-void VideodrommControllerApp::loadMovieFile(const fs::path &moviePath)
-{
-	try {
-		mMovie.reset();
-		// load up the movie, set it to loop, and begin playing
-		mMovie = qtime::MovieGlHap::create(moviePath);
-		mLoopVideo = (mMovie->getDuration() < 30.0f);
-		mMovie->setLoop(mLoopVideo);
-		mMovie->play();
-	}
-	catch (ci::Exception &e)
-	{
-		console() << string(e.what()) << std::endl;
-		console() << "Unable to load the movie." << std::endl;
-	}
 
-}
 void VideodrommControllerApp::update()
 {
 	mVDSettings->iFps = getAverageFps();
@@ -379,10 +361,8 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 		int rtn = mVDTextures->loadPixelFragmentShaderAtIndex(index, mFile);
 		if (rtn > -1 && rtn < mVDShaders->getCount())
 		{
-
 			// reset zoom
 			mVDSettings->controlValues[22] = 1.0f;
-
 		}
 	}
 	else if (ext == "xml")
@@ -390,7 +370,7 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 	}
 	else if (ext == "mov")
 	{
-		loadMovieFile(mFile);
+		mVDTextures->loadMovie(index, mFile);
 	}
 	else if (ext == "txt")
 	{
@@ -413,9 +393,9 @@ void VideodrommControllerApp::renderSceneToFbo()
 	gl::clear(Color::black());
 	// setup the viewport to match the dimensions of the FBO
 	gl::ScopedViewport scpVp(ivec2(0), mRenderFbo->getSize());
-	if (mMovie) {
+	/*if (mMovie) {
 		if (mMovie->isPlaying()) mMovie->draw();
-	}
+	}*/
 	//mVDTextures->draw();
 	//gl::color(Color::white());
 	gl::draw(mVDTextures->getFboTexture(0));
@@ -444,6 +424,13 @@ void VideodrommControllerApp::drawRenderWindow()
 			setWindowSize(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight);
 			setWindowPos(ivec2(mVDSettings->mRenderX, mVDSettings->mRenderY));
 			timeline().apply(&mVDSettings->iAlpha, 0.0f, 1.0f, 1.5f, EaseInCubic());
+		}
+	}
+	if (mMovieDelay) {
+		if (getElapsedFrames() > mVDSession->getMoviePlaybackDelay()) {
+			mMovieDelay = false;
+			fs::path movieFile = getAssetPath("") / mVDSettings->mAssetsPath / mVDSession->getMovieFileName();
+			mVDTextures->loadMovie(0, movieFile.string());
 		}
 	}
 	gl::clear(Color::black());

@@ -224,7 +224,7 @@ void VideodrommControllerApp::mouseUp(MouseEvent event)
 
 void VideodrommControllerApp::keyDown(KeyEvent event)
 {
-	fs::path moviePath;
+	//fs::path moviePath;
 
 	// pass this key event to the warp editor first
 	if (!Warp::handleKeyDown(mWarps, event)) {
@@ -257,24 +257,12 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 					}
 					break;*/
 			case KeyEvent::KEY_LEFT:
-				//for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
-				//{
-				//	(mVDTextures->getInputTexture(i)->pauseSequence();
-				//	mVDSettings->iBeat--;
-				//	// Seek to a new position in the sequence
-				//	mImageSequencePosition = (mVDTextures->getInputTexture(i)->getPlayheadPosition();
-				//	(mVDTextures->getInputTexture(i)->setPlayheadPosition(--mImageSequencePosition);
-				//}
+				mVDTextures->rewindMovie();
+				
 				break;
 			case KeyEvent::KEY_RIGHT:
-				//for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
-				//{
-				//	(mVDTextures->getInputTexture(i)->pauseSequence();
-				//	mVDSettings->iBeat++;
-				//	// Seek to a new position in the sequence
-				//	mImageSequencePosition = (mVDTextures->getInputTexture(i)->getPlayheadPosition();
-				//	(mVDTextures->getInputTexture(i)->setPlayheadPosition(++mImageSequencePosition);
-				//}
+				mVDTextures->fastforwardMovie();
+				
 				break;
 			case KeyEvent::KEY_SPACE:
 				//if (mMovie) { if (mMovie->isPlaying()) mMovie->stop(); else mMovie->play(); }

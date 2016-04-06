@@ -30,6 +30,7 @@ fps = 142 / 60 * 4 = 9.46
 void VideodrommControllerApp::prepare(Settings *settings)
 {
 	settings->setWindowSize(40, 10);
+	settings->setBorderless();
 }
 void VideodrommControllerApp::setup()
 {
@@ -58,13 +59,13 @@ void VideodrommControllerApp::setup()
 	// Shaders
 	mVDShaders = VDShaders::create(mVDSettings);
 	// Textures
-	mVDTextures = VDTextures::create(mVDSettings, mVDShaders, mVDAnimation);
+	mVDTextures = VDTextures::create(mVDSettings, mVDShaders, mVDAnimation, mVDSession);
 	// fbo indexes
 	textFboIndex = imgSeqFboIndex = 0;
 	// try loading image sequence from dir
-	if (mVDSession->hasImageSequencePath()) imgSeqFboIndex = mVDTextures->loadImageSequence(1, mVDSession->getImageSequencePath());
+	//if (mVDSession->hasImageSequencePath()) imgSeqFboIndex = mVDTextures->loadImageSequence(1, mVDSession->getImageSequencePath());
 	// try to load text
-	if (mVDSession->hasText()) textFboIndex = mVDTextures->loadText(2, mVDSession->getText(), mVDSession->getTextStart(), mVDSession->getTextEnd());
+	//if (mVDSession->hasText()) textFboIndex = mVDTextures->loadText(2, mVDSession->getText(), mVDSession->getTextStart(), mVDSession->getTextEnd());
 
 
 	setFrameRate(mVDSession->getTargetFps());
@@ -77,7 +78,7 @@ void VideodrommControllerApp::setup()
 	// render fbo
 	gl::Fbo::Format format;
 	//format.setSamples( 4 ); // uncomment this to enable 4x antialiasing
-	mRenderFbo = gl::Fbo::create(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, format.colorTexture());
+	//mRenderFbo = gl::Fbo::create(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, format.colorTexture());
 	if (mVDSettings->mStandalone) {
 
 	}
@@ -126,7 +127,8 @@ void VideodrommControllerApp::setup()
 	catch (const std::exception &e) {
 		console() << e.what() << std::endl;
 	}
-	Warp::setSize(mWarps, ivec2(mVDSettings->mFboWidth, mVDSettings->mFboHeight));
+	//Warp::setSize(mWarps, ivec2(mVDSettings->mFboWidth, mVDSettings->mFboHeight));
+	Warp::setSize(mWarps, ivec2(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight));
 	//Warp::setSize(mWarps, mImage->getSize());
 	mSaveThumbTimer = 0.0f;
 
@@ -182,7 +184,7 @@ void VideodrommControllerApp::resizeWindow()
 	else {
 		ui::disconnectWindow(mControlWindow);
 	}
-
+	//Warp::setSize(mWarps, ivec2(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight));
 	// tell the warps our window has been resized, so they properly scale up or down
 	Warp::handleResize(mWarps);
 
@@ -239,21 +241,21 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 				// toggle warp edit mode
 				Warp::enableEditMode(!Warp::isEditModeEnabled());
 				break;
-			/*case KeyEvent::KEY_o:
-				moviePath = getOpenFilePath();
-				if (!moviePath.empty())
+				/*case KeyEvent::KEY_o:
+					moviePath = getOpenFilePath();
+					if (!moviePath.empty())
 					loadMovieFile(moviePath);
-				break;
-			case KeyEvent::KEY_r:
-				if (mMovie) mMovie.reset();
-				break;
-			case KeyEvent::KEY_p:
-				if (mMovie) mMovie->play();
-				for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
-				{
-				(mVDTextures->getInputTexture(i)->playSequence();
-				}
-				break;*/
+					break;
+					case KeyEvent::KEY_r:
+					if (mMovie) mMovie.reset();
+					break;
+					case KeyEvent::KEY_p:
+					if (mMovie) mMovie->play();
+					for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
+					{
+					(mVDTextures->getInputTexture(i)->playSequence();
+					}
+					break;*/
 			case KeyEvent::KEY_LEFT:
 				//for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
 				//{
@@ -330,7 +332,7 @@ void VideodrommControllerApp::update()
 	mVDRouter->update();
 	updateWindowTitle();
 
-	renderSceneToFbo();
+	//renderSceneToFbo();
 }
 void VideodrommControllerApp::fileDrop(FileDropEvent event)
 {
@@ -384,7 +386,7 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 }
 
 // Render the scene into the FBO
-void VideodrommControllerApp::renderSceneToFbo()
+/*void VideodrommControllerApp::renderSceneToFbo()
 {
 	// this will restore the old framebuffer binding when we leave this function
 	// on non-OpenGL ES platforms, you can just call mFbo->unbindFramebuffer() at the end of the function
@@ -393,31 +395,23 @@ void VideodrommControllerApp::renderSceneToFbo()
 	gl::clear(Color::black());
 	// setup the viewport to match the dimensions of the FBO
 	gl::ScopedViewport scpVp(ivec2(0), mRenderFbo->getSize());
-	/*if (mMovie) {
-		if (mMovie->isPlaying()) mMovie->draw();
-	}*/
-	//mVDTextures->draw();
-	//gl::color(Color::white());
-	gl::draw(mVDTextures->getFboTexture(1));
+	
+	gl::draw(mVDTextures->getFboTexture(2), Rectf(0, mVDSettings->mRenderHeight, mVDSettings->mRenderWidth, 0));
 
 	int i = 0;
 	// iterate over the warps and draw their content
 	for (auto &warp : mWarps) {
-		if (textFboIndex != 0) {
-			warp->draw(mVDTextures->getFboTexture(textFboIndex), mVDTextures->getFboTexture(textFboIndex)->getBounds());
-		}
-		else if (imgSeqFboIndex != 0){
-			warp->draw(mVDTextures->getFboTexture(imgSeqFboIndex), mVDTextures->getFboTexture(imgSeqFboIndex)->getBounds());
-		}
-		else {
-			warp->draw(mVDTextures->getFboTexture(i), mVDTextures->getFboTexture(i)->getBounds());
+		//warp->draw(mVDTextures->getFboTexture(i), mVDTextures->getFboTexture(i)->getBounds());
+		//warp->draw(mVDTextures->getFboTexture(i), Area(0, 0, mVDTextures->getFboTextureWidth(i), mVDTextures->getFboTextureHeight(i)));
+		warp->draw(mVDTextures->getFboTexture(i), Area(0, 0, mVDTextures->getFboTextureWidth(i), mVDTextures->getFboTextureHeight(i)));
 
-		}
+		//warp->draw(mVDTextures->getFboTexture(i), Area(0, 0, 1280, 720));
+		i++;
 	}
-}
+}*/
 void VideodrommControllerApp::drawRenderWindow()
 {
-	renderSceneToFbo();
+	//renderSceneToFbo();
 	if (mFadeInDelay) {
 		if (getElapsedFrames() > mVDSession->getFadeInDelay()) {
 			mFadeInDelay = false;
@@ -426,15 +420,24 @@ void VideodrommControllerApp::drawRenderWindow()
 			timeline().apply(&mVDSettings->iAlpha, 0.0f, 1.0f, 1.5f, EaseInCubic());
 		}
 	}
-	if (mMovieDelay) {
+	/*if (mMovieDelay) {
 		if (getElapsedFrames() > mVDSession->getMoviePlaybackDelay()) {
-			mMovieDelay = false;
-			fs::path movieFile = getAssetPath("") / mVDSettings->mAssetsPath / mVDSession->getMovieFileName();
-			mVDTextures->loadMovie(0, movieFile.string());
+		mMovieDelay = false;
+		fs::path movieFile = getAssetPath("") / mVDSettings->mAssetsPath / mVDSession->getMovieFileName();
+		mVDTextures->loadMovie(0, movieFile.string());
 		}
-	}
+		}*/
 	gl::clear(Color::black());
-	gl::draw(mRenderFbo->getColorTexture());
+	//gl::draw(mRenderFbo->getColorTexture());
+	//gl::draw(mVDTextures->getFboTexture(2), Rectf(0, mVDSettings->mRenderHeight, mVDSettings->mRenderWidth, 0));
+
+	int i = 0;
+	// iterate over the warps and draw their content
+	for (auto &warp : mWarps) {
+		warp->draw(mVDTextures->getFboTexture(i), Area(0, 0, mVDTextures->getFboTextureWidth(i), mVDTextures->getFboTextureHeight(i)));
+
+		i++;
+	}
 }
 // Render the UI into the FBO
 void VideodrommControllerApp::renderUIToFbo()
@@ -452,6 +455,8 @@ void VideodrommControllerApp::renderUIToFbo()
 	static int currentWindowRow1 = 0;
 	static int currentWindowRow2 = 0;
 	static int currentWindowRow3 = 0;
+	static int selectedLeftInputTexture = 2;
+	static int selectedRightInputTexture = 1;
 
 	xPos = margin;
 	const char* warpInputs[] = { "mix", "left", "right", "warp1", "warp2", "preview", "abp", "live", "w8", "w9", "w10", "w11", "w12", "w13", "w14", "w15" };
@@ -471,7 +476,7 @@ void VideodrommControllerApp::renderUIToFbo()
 		ImGui::RadioButton("Effects", &currentWindowRow1, 4); ui::SameLine();
 		ImGui::RadioButton("Color", &currentWindowRow1, 5); ui::SameLine();
 		ImGui::RadioButton("Tempo", &currentWindowRow1, 6); ui::SameLine();
-		ImGui::RadioButton("Blend", &currentWindowRow1, 7); 
+		ImGui::RadioButton("Blend", &currentWindowRow1, 7);
 
 		ImGui::RadioButton("Textures", &currentWindowRow2, 0); ImGui::SameLine();
 		ImGui::RadioButton("Fbos", &currentWindowRow2, 1); ImGui::SameLine();
@@ -530,7 +535,7 @@ void VideodrommControllerApp::renderUIToFbo()
 			}
 
 			ui::SliderFloat("mult x", &mVDSettings->controlValues[13], 0.01f, 10.0f);
-			
+
 			ImGui::PlotHistogram("Histogram", mVDAudio->getSmallSpectrum(), 7, 0, NULL, 0.0f, 255.0f, ImVec2(0, 30));
 
 			if (mVDSettings->maxVolume > 240.0) ui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
@@ -798,7 +803,7 @@ void VideodrommControllerApp::renderUIToFbo()
 
 
 #pragma endregion Color
-		break;	
+		break;
 	case 6:
 		// Tempo
 #pragma region Tempo
@@ -810,13 +815,13 @@ void VideodrommControllerApp::renderUIToFbo()
 			if (ui::Button("x##spdx")) { mVDSettings->iSpeedMultiplier = 1.0; }
 			ui::SameLine();
 			ui::SliderFloat("speed x", &mVDSettings->iSpeedMultiplier, 0.01f, 5.0f, "%.1f");
-	
+
 			ui::Text("Beat %d ", mVDSettings->iBeat);
 			ui::SameLine();
 			ui::Text("Beat Idx %d ", mVDAnimation->iBeatIndex);
-//ui::SameLine();
+			//ui::SameLine();
 			//ui::Text("Bar %d ", mVDAnimation->iBar);
-			
+
 
 			if (ui::Button("x##bpbx")) { mVDSession->iBeatsPerBar = 1; }
 			ui::SameLine();
@@ -830,11 +835,11 @@ void VideodrommControllerApp::renderUIToFbo()
 
 			ui::Text("Tempo %.2f ", mVDSession->getBpm());
 
-		
+
 			if (ui::Button("Tap tempo")) { mVDAnimation->tapTempo(); }
-			
+
 			if (ui::Button("Time tempo")) { mVDAnimation->mUseTimeWithTempo = !mVDAnimation->mUseTimeWithTempo; }
-		
+
 
 			//void Batchass::setTimeFactor(const int &aTimeFactor)
 			ui::SliderFloat("time x", &mVDAnimation->iTimeFactor, 0.0001f, 1.0f, "%.01f");
@@ -864,7 +869,7 @@ void VideodrommControllerApp::renderUIToFbo()
 #pragma endregion Blend
 		break;
 	}
-	
+
 #pragma region Global
 
 	ui::SetNextWindowSize(ImVec2(largeW, displayHeight), ImGuiSetCond_Once);
@@ -873,7 +878,7 @@ void VideodrommControllerApp::renderUIToFbo()
 	{
 		ImGui::PushItemWidth(mVDSettings->mPreviewFboWidth);
 
-		
+
 		if (ui::CollapsingHeader("Animation", NULL, true, true))
 		{
 
@@ -1052,16 +1057,19 @@ void VideodrommControllerApp::renderUIToFbo()
 
 	ui::SetNextWindowSize(ImVec2(largePreviewW, largePreviewH), ImGuiSetCond_Once);
 	ui::SetNextWindowPos(ImVec2(xPos, yPosRow1), ImGuiSetCond_Once);
-	ui::Begin("Source");
+	ui::Begin("Left input texture");
 	{
 		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
 		ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.1f, 0.6f, 0.6f));
 		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.1f, 0.7f, 0.7f));
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
 
-		sprintf_s(buf, "FV##left%d", 40);
+		
+		ui::Image((void*)mVDTextures->getTextureLeft(selectedLeftInputTexture)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
 
-		ui::Image((void*)mVDTextures->getFboTextureId(imgSeqFboIndex), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
+		ImGui::RadioButton("0", &selectedLeftInputTexture, 0); ImGui::SameLine();
+		ImGui::RadioButton("1", &selectedLeftInputTexture, 1); ImGui::SameLine();
+		ImGui::RadioButton("2", &selectedLeftInputTexture, 2); ImGui::SameLine();
 
 		ui::PopStyleColor(3);
 		ui::PopItemWidth();
@@ -1071,11 +1079,36 @@ void VideodrommControllerApp::renderUIToFbo()
 
 	// pop color for this chain
 	ui::PopStyleColor(1);
-
-	// next line
-
-
 #pragma endregion left
+
+#pragma region right
+	// push color for this chain, must be popped at the end
+	ui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.0f, 1.0f, 0.0f, 1.00f));
+
+	ui::SetNextWindowSize(ImVec2(largePreviewW, largePreviewH), ImGuiSetCond_Once);
+	ui::SetNextWindowPos(ImVec2(xPos, yPosRow1), ImGuiSetCond_Once);
+	ui::Begin("Right input texture");
+	{
+		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
+		ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.1f, 0.6f, 0.6f));
+		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.1f, 0.7f, 0.7f));
+		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
+
+		ui::Image((void*)mVDTextures->getTextureRight(selectedRightInputTexture)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
+
+		ImGui::RadioButton("0", &selectedRightInputTexture, 0); ImGui::SameLine();
+		ImGui::RadioButton("1", &selectedRightInputTexture, 1); ImGui::SameLine();
+		ImGui::RadioButton("2", &selectedRightInputTexture, 2); ImGui::SameLine();
+
+		ui::PopStyleColor(3);
+		ui::PopItemWidth();
+	}
+	ui::End();
+	xPos += largePreviewW + margin;
+
+	// pop color for this chain
+	ui::PopStyleColor(1);
+#pragma endregion right
 
 #pragma region mix
 	// left/warp1 fbo
@@ -1206,7 +1239,6 @@ void VideodrommControllerApp::renderUIToFbo()
 					}
 
 				}
-
 				//END
 				ui::PopStyleColor(3);
 				ui::PopID();
@@ -1277,10 +1309,10 @@ void VideodrommControllerApp::renderUIToFbo()
 			{
 				/* TODO if (mVDSettings->iTrack == i) {
 					sprintf_s(buf, "SEL ##lsh%d", i);
-				}
-				else {
+					}
+					else {
 					sprintf_s(buf, "%d##lsh%d", mVDShaders->getShader(i).microseconds, i);
-				}*/
+					}*/
 				sprintf_s(buf, "%s##lsh%d", mVDShaders->getShader(i).name.c_str(), i);
 				ui::SetNextWindowSize(ImVec2(w, h));
 				ui::SetNextWindowPos(ImVec2(xPos + margin, yPos));
@@ -1310,7 +1342,7 @@ void VideodrommControllerApp::renderUIToFbo()
 					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.0f, 0.7f, 0.7f));
 					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.0f, 0.8f, 0.8f));
 					sprintf_s(buf, "L##s%d", i);
-					if (ui::Button(buf)) { 
+					if (ui::Button(buf)) {
 						mVDSettings->mLeftFragIndex = i;// TODO send via OSC? selectShader(true, i);
 						mVDTextures->setFragForFbo(i, 1); // 2 = right;
 					}
@@ -1460,7 +1492,6 @@ void VideodrommControllerApp::renderUIToFbo()
 }
 void VideodrommControllerApp::drawControlWindow()
 {
-
 	if (mIsResizing) {
 		mIsResizing = false;
 		if (mVDSettings->mStandalone) {
@@ -1486,10 +1517,7 @@ void VideodrommControllerApp::drawControlWindow()
 		style.WindowFillAlphaDefault = 0.83;
 		style.ChildWindowRounding = 3;
 		style.WindowRounding = 3;
-		//style.GrabRounding = 1;
-		//style.GrabMinSize = 20;
 		style.FrameRounding = 3;
-
 
 		style.Colors[ImGuiCol_Text] = ImVec4(0.00f, 1.00f, 1.00f, 1.00f);
 		style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.00f, 0.40f, 0.41f, 1.00f);
@@ -1540,7 +1568,7 @@ void VideodrommControllerApp::drawControlWindow()
 
 	renderUIToFbo();
 	gl::clear(Color::black());
-	gl::draw(mUIFbo->getColorTexture(), Rectf(128, 0, 256, 128)); // TODO CHECK
+	gl::draw(mUIFbo->getColorTexture());
 
 
 }

@@ -132,8 +132,8 @@ private:
 	//Area						mSrcArea;
 	fs::path					mWarpSettings;
 	// fbo
-	void						renderSceneToFbo();
-	gl::FboRef					mRenderFbo;
+	//void						renderSceneToFbo();
+	//gl::FboRef					mRenderFbo;
 	void						renderUIToFbo();
 	gl::FboRef					mUIFbo;
 	bool						mFadeInDelay;

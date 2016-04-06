@@ -55,18 +55,13 @@ void VideodrommControllerApp::setup()
 
 
 	// Audio
-	mVDAudio = VDAudio::create(mVDSettings); // TODO check for line in presence RTE otherwise
+	//mVDAudio = VDAudio::create(mVDSettings); // TODO check for line in presence RTE otherwise
 	// Shaders
 	mVDShaders = VDShaders::create(mVDSettings);
 	// Textures
 	mVDTextures = VDTextures::create(mVDSettings, mVDShaders, mVDAnimation, mVDSession);
 	// fbo indexes
-	textFboIndex = imgSeqFboIndex = 0;
-	// try loading image sequence from dir
-	//if (mVDSession->hasImageSequencePath()) imgSeqFboIndex = mVDTextures->loadImageSequence(1, mVDSession->getImageSequencePath());
-	// try to load text
-	//if (mVDSession->hasText()) textFboIndex = mVDTextures->loadText(2, mVDSession->getText(), mVDSession->getTextStart(), mVDSession->getTextEnd());
-
+	//textFboIndex = imgSeqFboIndex = 0;
 
 	setFrameRate(mVDSession->getTargetFps());
 	mMovieDelay = mFadeInDelay = true;
@@ -316,7 +311,7 @@ void VideodrommControllerApp::update()
 	mVDAnimation->update();
 
 	mVDTextures->update();
-	mVDAudio->update();
+	//mVDAudio->update();
 	mVDRouter->update();
 	updateWindowTitle();
 
@@ -368,7 +363,7 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 	else if (ext == "")
 	{
 		// try loading image sequence from dir
-		imgSeqFboIndex = mVDTextures->loadImageSequence(index, mFile);
+		mVDTextures->loadImageSequence(index, mFile);
 	}
 
 }
@@ -524,7 +519,7 @@ void VideodrommControllerApp::renderUIToFbo()
 
 			ui::SliderFloat("mult x", &mVDSettings->controlValues[13], 0.01f, 10.0f);
 
-			ImGui::PlotHistogram("Histogram", mVDAudio->getSmallSpectrum(), 7, 0, NULL, 0.0f, 255.0f, ImVec2(0, 30));
+			ImGui::PlotHistogram("Histogram", mVDTextures->getSmallSpectrum(), 7, 0, NULL, 0.0f, 255.0f, ImVec2(0, 30));
 
 			if (mVDSettings->maxVolume > 240.0) ui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
 			ui::PlotLines("Volume", &timeValues.front(), (int)timeValues.size(), timeValues_offset, toString(mVDUtils->formatFloat(mVDSettings->maxVolume)).c_str(), 0.0f, 255.0f, ImVec2(0, 30));

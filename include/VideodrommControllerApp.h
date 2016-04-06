@@ -25,7 +25,7 @@
 // fbo
 #include "VDFbo.h"
 // Audio
-#include "VDAudio.h"
+//#include "VDAudio.h"
 // fbo
 //#include "VDFbo.h"
 // UnionJack
@@ -78,19 +78,14 @@ private:
 	VDRouterRef					mVDRouter;
 	// Animation
 	VDAnimationRef				mVDAnimation;
-	// Image sequence
-	//vector<VDImageSequenceRef>	mVDImageSequences;
-	//int							mImageSequencePosition;
 	// Audio
-	VDAudioRef					mVDAudio;
+	//VDAudioRef					mVDAudio;
 	// Shaders
 	VDShadersRef				mVDShaders;
 	// Textures
 	VDTexturesRef				mVDTextures;
-	int							imgSeqFboIndex;
-	int							textFboIndex;
-	// Fbos
-	//vector<VDFboRef>			mVDFbos;
+	//int							imgSeqFboIndex;
+	//int							textFboIndex;
 	// window mgmt
 	WindowRef					mControlWindow;
 	bool						mIsResizing;

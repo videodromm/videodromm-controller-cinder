@@ -398,7 +398,7 @@ void VideodrommControllerApp::renderSceneToFbo()
 	}*/
 	//mVDTextures->draw();
 	//gl::color(Color::white());
-	gl::draw(mVDTextures->getFboTexture(0));
+	gl::draw(mVDTextures->getFboTexture(1));
 
 	int i = 0;
 	// iterate over the warps and draw their content
@@ -410,7 +410,7 @@ void VideodrommControllerApp::renderSceneToFbo()
 			warp->draw(mVDTextures->getFboTexture(imgSeqFboIndex), mVDTextures->getFboTexture(imgSeqFboIndex)->getBounds());
 		}
 		else {
-			warp->draw(mVDTextures->getFboTexture(0), mVDTextures->getFboTexture(0)->getBounds());
+			warp->draw(mVDTextures->getFboTexture(i), mVDTextures->getFboTexture(i)->getBounds());
 
 		}
 	}
@@ -1244,6 +1244,14 @@ void VideodrommControllerApp::renderUIToFbo()
 				sprintf_s(buf, "S##fbo%d", i);
 				if (ui::Button(buf)) mVDTextures->saveThumb(i);
 				if (ui::IsItemHovered()) ui::SetTooltip("Save thumb");
+
+				sprintf_s(buf, "MX##fbo%d", i);
+				if (ui::Button(buf)) mVDTextures->useMixShader(i);
+				if (ui::IsItemHovered()) ui::SetTooltip("Use Mix Shader");
+				ui::SameLine();
+				sprintf_s(buf, "PA##fbo%d", i);
+				if (ui::Button(buf)) mVDTextures->usePassthruShader(i);
+				if (ui::IsItemHovered()) ui::SetTooltip("Use Passthru Shader");
 
 				ui::PopStyleColor(3);
 				ui::PopID();

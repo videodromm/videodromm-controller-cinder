@@ -126,6 +126,7 @@ private:
 	string						fileWarpsName;
 	//Area						mSrcArea;
 	fs::path					mWarpSettings;
+	int							mWarpFboIndex;
 	// fbo
 	//void						renderSceneToFbo();
 	//gl::FboRef					mRenderFbo;

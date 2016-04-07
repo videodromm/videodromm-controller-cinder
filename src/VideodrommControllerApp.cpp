@@ -124,6 +124,7 @@ void VideodrommControllerApp::setup()
 	}
 	//Warp::setSize(mWarps, ivec2(mVDSettings->mFboWidth, mVDSettings->mFboHeight));
 	Warp::setSize(mWarps, ivec2(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight));
+	mWarpFboIndex = 0;
 	//Warp::setSize(mWarps, mImage->getSize());
 	mSaveThumbTimer = 0.0f;
 
@@ -414,12 +415,12 @@ void VideodrommControllerApp::drawRenderWindow()
 	//gl::draw(mRenderFbo->getColorTexture());
 	//gl::draw(mVDTextures->getFboTexture(2), Rectf(0, mVDSettings->mRenderHeight, mVDSettings->mRenderWidth, 0));
 
-	int i = 0;
+	//int i = 0;
 	// iterate over the warps and draw their content
 	for (auto &warp : mWarps) {
-		warp->draw(mVDTextures->getFboTexture(i), Area(0, 0, mVDTextures->getFboTextureWidth(i), mVDTextures->getFboTextureHeight(i)));
+		warp->draw(mVDTextures->getFboTexture(mWarpFboIndex), Area(0, 0, mVDTextures->getFboTextureWidth(mWarpFboIndex), mVDTextures->getFboTextureHeight(mWarpFboIndex)));
 
-		i++;
+		//i++;
 	}
 }
 // Render the UI into the FBO
@@ -1050,9 +1051,10 @@ void VideodrommControllerApp::renderUIToFbo()
 		
 		ui::Image((void*)mVDTextures->getTextureLeft(selectedLeftInputTexture)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
 
-		ImGui::RadioButton("0", &selectedLeftInputTexture, 0); ImGui::SameLine();
+		ui::SliderInt("Input", &selectedLeftInputTexture, 0, mVDTextures->getInputTexturesCount() - 1);
+		/*ImGui::RadioButton("0", &selectedLeftInputTexture, 0); ImGui::SameLine();
 		ImGui::RadioButton("1", &selectedLeftInputTexture, 1); ImGui::SameLine();
-		ImGui::RadioButton("2", &selectedLeftInputTexture, 2); ImGui::SameLine();
+		ImGui::RadioButton("2", &selectedLeftInputTexture, 2); ImGui::SameLine();*/
 
 		ui::PopStyleColor(3);
 		ui::PopItemWidth();
@@ -1079,9 +1081,10 @@ void VideodrommControllerApp::renderUIToFbo()
 
 		ui::Image((void*)mVDTextures->getTextureRight(selectedRightInputTexture)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
 
-		ImGui::RadioButton("0", &selectedRightInputTexture, 0); ImGui::SameLine();
+		ui::SliderInt("Input", &selectedRightInputTexture, 0, mVDTextures->getInputTexturesCount() - 1);
+		/*ImGui::RadioButton("0", &selectedRightInputTexture, 0); ImGui::SameLine();
 		ImGui::RadioButton("1", &selectedRightInputTexture, 1); ImGui::SameLine();
-		ImGui::RadioButton("2", &selectedRightInputTexture, 2); ImGui::SameLine();
+		ImGui::RadioButton("2", &selectedRightInputTexture, 2); ImGui::SameLine();*/
 
 		ui::PopStyleColor(3);
 		ui::PopItemWidth();
@@ -1105,8 +1108,17 @@ void VideodrommControllerApp::renderUIToFbo()
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
 
 		sprintf_s(buf, "FV##mix%d", 40);
-		ui::Image((void*)mVDTextures->getFboTextureId(0), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
+		//ui::Image((void*)mVDTextures->getFboTextureId(mWarpFboIndex), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
+		ui::Image((void*)mVDTextures->getFboTexture(mWarpFboIndex)->getId(), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
 
+		ui::SliderInt("Fbo", &mWarpFboIndex, 0, mVDTextures->getFboCount() - 1);
+		/*ui::Text("Fbo");
+		for (int i = 0; i < mVDTextures->getFboCount(); i++)
+		{
+			sprintf_s(buf, "%d", i);
+			ImGui::SameLine();ImGui::RadioButton(buf, &mWarpFboIndex, i); 
+
+		}*/
 		ui::PopStyleColor(3);
 		ui::PopItemWidth();
 	}
@@ -1234,7 +1246,7 @@ void VideodrommControllerApp::renderUIToFbo()
 		break;
 	case 1:
 		// Fbos
-
+		
 #pragma region fbos
 		mVDSettings->mRenderThumbs = true;
 

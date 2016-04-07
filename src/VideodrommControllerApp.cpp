@@ -434,7 +434,7 @@ void VideodrommControllerApp::renderUIToFbo()
 	gl::ScopedViewport scpVp(ivec2(0), ivec2(mVDSettings->mFboWidth * mVDSettings->mUIZoom, mVDSettings->mFboHeight * mVDSettings->mUIZoom));
 	gl::clear();
 	gl::color(Color::white());
-	// 0403 ??? gl::setMatricesWindow(500, 400);
+	gl::setMatricesWindow(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight,false);
 	// imgui
 	static int currentWindowRow1 = 0;
 	static int currentWindowRow2 = 0;
@@ -1047,14 +1047,10 @@ void VideodrommControllerApp::renderUIToFbo()
 		ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.1f, 0.6f, 0.6f));
 		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.1f, 0.7f, 0.7f));
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
-
 		
 		ui::Image((void*)mVDTextures->getTextureLeft(selectedLeftInputTexture)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
 
 		ui::SliderInt("Input", &selectedLeftInputTexture, 0, mVDTextures->getInputTexturesCount() - 1);
-		/*ImGui::RadioButton("0", &selectedLeftInputTexture, 0); ImGui::SameLine();
-		ImGui::RadioButton("1", &selectedLeftInputTexture, 1); ImGui::SameLine();
-		ImGui::RadioButton("2", &selectedLeftInputTexture, 2); ImGui::SameLine();*/
 
 		ui::PopStyleColor(3);
 		ui::PopItemWidth();
@@ -1082,9 +1078,6 @@ void VideodrommControllerApp::renderUIToFbo()
 		ui::Image((void*)mVDTextures->getTextureRight(selectedRightInputTexture)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
 
 		ui::SliderInt("Input", &selectedRightInputTexture, 0, mVDTextures->getInputTexturesCount() - 1);
-		/*ImGui::RadioButton("0", &selectedRightInputTexture, 0); ImGui::SameLine();
-		ImGui::RadioButton("1", &selectedRightInputTexture, 1); ImGui::SameLine();
-		ImGui::RadioButton("2", &selectedRightInputTexture, 2); ImGui::SameLine();*/
 
 		ui::PopStyleColor(3);
 		ui::PopItemWidth();
@@ -1108,17 +1101,11 @@ void VideodrommControllerApp::renderUIToFbo()
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
 
 		sprintf_s(buf, "FV##mix%d", 40);
-		//ui::Image((void*)mVDTextures->getFboTextureId(mWarpFboIndex), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
+		// weird ui::Image((void*)mVDTextures->getFboTextureId(mWarpFboIndex), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
 		ui::Image((void*)mVDTextures->getFboTexture(mWarpFboIndex)->getId(), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
 
 		ui::SliderInt("Fbo", &mWarpFboIndex, 0, mVDTextures->getFboCount() - 1);
-		/*ui::Text("Fbo");
-		for (int i = 0; i < mVDTextures->getFboCount(); i++)
-		{
-			sprintf_s(buf, "%d", i);
-			ImGui::SameLine();ImGui::RadioButton(buf, &mWarpFboIndex, i); 
 
-		}*/
 		ui::PopStyleColor(3);
 		ui::PopItemWidth();
 	}
@@ -1558,14 +1545,11 @@ void VideodrommControllerApp::drawControlWindow()
 		style.Colors[ImGuiCol_TooltipBg] = ImVec4(0.00f, 0.13f, 0.13f, 0.90f);
 		style.Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(0.04f, 0.10f, 0.09f, 0.51f);
 #pragma endregion style
-
 	}
 
 	renderUIToFbo();
 	gl::clear(Color::black());
 	gl::draw(mUIFbo->getColorTexture());
-
-
 }
 
 void VideodrommControllerApp::updateWindowTitle()

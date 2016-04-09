@@ -237,30 +237,15 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 				// toggle warp edit mode
 				Warp::enableEditMode(!Warp::isEditModeEnabled());
 				break;
-				/*case KeyEvent::KEY_o:
-					moviePath = getOpenFilePath();
-					if (!moviePath.empty())
-					loadMovieFile(moviePath);
-					break;
-					case KeyEvent::KEY_r:
-					if (mMovie) mMovie.reset();
-					break;
-					case KeyEvent::KEY_p:
-					if (mMovie) mMovie->play();
-					for (unsigned int i = 0; i < mVDImageSequences.size(); i++)
-					{
-					(mVDTextures->getInputTexture(i)->playSequence();
-					}
-					break;*/
 			case KeyEvent::KEY_LEFT:
-				mVDTextures->rewindMovie();
-				
+				mVDTextures->rewindMovie();				
 				break;
 			case KeyEvent::KEY_RIGHT:
-				mVDTextures->fastforwardMovie();
-				
+				mVDTextures->fastforwardMovie();				
 				break;
 			case KeyEvent::KEY_SPACE:
+				mVDTextures->playMovie();
+				//mVDAnimation->currentScene++;
 				//if (mMovie) { if (mMovie->isPlaying()) mMovie->stop(); else mMovie->play(); }
 				break;
 			case KeyEvent::KEY_l:
@@ -271,12 +256,10 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 			case KeyEvent::KEY_c:
 				// mouse cursor
 				mVDSettings->mCursorVisible = !mVDSettings->mCursorVisible;
-				if (mVDSettings->mCursorVisible)
-				{
+				if (mVDSettings->mCursorVisible) {
 					hideCursor();
 				}
-				else
-				{
+				else {
 					showCursor();
 				}
 				break;

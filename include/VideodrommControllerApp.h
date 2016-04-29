@@ -19,19 +19,16 @@
 // Animation
 #include "VDAnimation.h"
 // Textures
-#include "VDTextures.h"
+#include "VDMix.h"
 // Shaders
-#include "VDShaders.h"
-// fbo
-#include "VDFbo.h"
+//#include "VDShaders.h"
 // Audio
 //#include "VDAudio.h"
 // fbo
 //#include "VDFbo.h"
 // UnionJack
 #include "UnionJack.h"
-// spout
-#include "spout.h"
+
 
 
 using namespace ci;
@@ -78,12 +75,16 @@ private:
 	VDRouterRef					mVDRouter;
 	// Animation
 	VDAnimationRef				mVDAnimation;
+	// Mix
+	VDMixList					mMixes;
+	fs::path					mMixesFilepath;
+
 	// Audio
 	//VDAudioRef					mVDAudio;
 	// Shaders
-	VDShadersRef				mVDShaders;
+	//VDShadersRef				mVDShaders;
 	// Textures
-	VDTexturesRef				mVDTextures;
+	//VDTexturesRef				mVDTextures;
 	//int							imgSeqFboIndex;
 	//int							textFboIndex;
 	// window mgmt

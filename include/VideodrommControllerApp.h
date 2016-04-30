@@ -131,8 +131,8 @@ private:
 	// fbo
 	//void						renderSceneToFbo();
 	//gl::FboRef					mRenderFbo;
-	void						renderUIToFbo();
-	gl::FboRef					mUIFbo;
+	//void						renderUIToFbo();
+	//gl::FboRef					mUIFbo;
 	bool						mFadeInDelay;
 	// timeline
 	Anim<float>					mSaveThumbTimer;

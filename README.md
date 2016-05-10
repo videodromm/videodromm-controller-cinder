@@ -14,7 +14,8 @@ In the blocks folders clone:
 - https://github.com/brucelane/Cinder-MIDI2.git
 - https://github.com/brucelane/Most-Pixels-Ever-Cinder.git
 - https://github.com/brucelane/UnionJack.git
-- https://github.com/brucelane/Cinder-Spout.git
+- https://github.com/brucelane/Cinder-Spout.git (Windows only)
+- https://github.com/naychrist/Cinder-Syphon/tree/glNext (glNext branch, Mac only)
 
 In the parent folder of Cinder create a folder named Videodromm and git clone https://github.com/videodromm/videodromm-controller-cinder
 

@@ -1355,7 +1355,22 @@ void VideodrommControllerApp::drawControlWindow()
 		break;
 	case 2:
 		// Shaders
+		if (ImGui::TreeNode("Multi-line Text Input"))
+		{
+			static bool read_only = false;
+			static char text[1024 * 16] =
+				"/*\n"
+				" Fragment shader.\n"
+				"*/\n\n"
+				"label:\n"
+				"\ttabbed\n";
 
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+			ImGui::Checkbox("Read-only", &read_only);
+			ImGui::PopStyleVar();
+			ImGui::InputTextMultiline("##source", text, IM_ARRAYSIZE(text), ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput | (read_only ? ImGuiInputTextFlags_ReadOnly : 0));
+			ImGui::TreePop();
+		}
 #pragma region library
 		/*mVDSettings->mRenderThumbs = true;
 

@@ -28,8 +28,8 @@
 //#include "VDFbo.h"
 // UnionJack
 #include "UnionJack.h"
-
-
+// Console
+#include "VDConsole.h"
 
 using namespace ci;
 using namespace ci::app;

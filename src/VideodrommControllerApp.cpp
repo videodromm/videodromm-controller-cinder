@@ -161,11 +161,11 @@ void VideodrommControllerApp::setup()
 	// mouse cursor
 	if (mVDSettings->mCursorVisible)
 	{
-		hideCursor();
+		showCursor();
 	}
 	else
 	{
-		showCursor();
+		hideCursor();
 	}
 	mVDAnimation->tapTempo();
 }

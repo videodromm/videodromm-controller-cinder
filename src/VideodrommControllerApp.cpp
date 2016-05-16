@@ -28,6 +28,7 @@ fpb = frames per beat
 fpb = 4, bpm = 142
 fps = 142 / 60 * 4 = 9.46
 */
+
 void VideodrommControllerApp::prepare(Settings *settings)
 {
 	settings->setWindowSize(40, 10);
@@ -509,7 +510,7 @@ void VideodrommControllerApp::drawControlWindow()
 	gl::clear(Color::black());
 	//gl::draw(mUIFbo->getColorTexture());
 
-	gl::color(Color::white());
+	//gl::color(Color::white());
 	gl::setMatricesWindow(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight, false);
 	// imgui
 	static int currentWindowRow1 = 0;
@@ -1311,19 +1312,19 @@ void VideodrommControllerApp::drawControlWindow()
 		// Fbos
 
 #pragma region fbos
-		/*mVDSettings->mRenderThumbs = true;
+		mVDSettings->mRenderThumbs = true;
 
-		for (int i = 0; i < mVDTextures->getFboCount(); i++)
+		for (int i = 0; i < mMixes[0]->getFboCount(); i++)
 		{
 		ui::SetNextWindowSize(ImVec2(w, h));
 		ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPosRow2));
-		sprintf_s(buf, "%s %d##fsh%d", mVDTextures->getTextureName(i).c_str(), mVDTextures->getMicroSeconds(i), i);
+		sprintf_s(buf, "%s ##fsh%d", mMixes[0]->getFboName(i).c_str(), i);
 		ui::Begin(buf, NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 		{
 
 		ui::PushID(i);
-		ui::Image((void*)mVDTextures->getFboTextureId(i), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
-		ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
+		ui::Image((void*)mMixes[0]->getFboTexture(i)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
+		/*ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
 		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
 
@@ -1343,11 +1344,11 @@ void VideodrommControllerApp::drawControlWindow()
 		if (ui::Button(buf)) mVDTextures->usePassthruShader(i);
 		if (ui::IsItemHovered()) ui::SetTooltip("Use Passthru Shader");
 
-		ui::PopStyleColor(3);
+		ui::PopStyleColor(3);*/
 		ui::PopID();
 		}
 		ui::End();
-		}*/
+		}
 
 
 #pragma endregion fbos

@@ -334,7 +334,7 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 	}
 	else if (ext == "glsl")
 	{
-		int rtn = mMixes[0]->loadFboFragmentShader(mFile, true);//right = true
+		int rtn = mMixes[0]->loadFboFragmentShader(mFile);
 		/*if (index < 0) index = 0;
 		if (index > mVDTextures->getFboCount() - 1) index = mVDTextures->getFboCount() - 1;
 		int rtn = mVDTextures->loadPixelFragmentShaderAtIndex(index, mFile);*/

@@ -514,7 +514,7 @@ void VideodrommControllerApp::drawControlWindow()
 	gl::setMatricesWindow(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight, false);
 	// imgui
 	static int currentWindowRow1 = 0;
-	static int currentWindowRow2 = 0;
+	static int currentWindowRow2 = 1;
 	static int currentWindowRow3 = 0;
 	static int selectedLeftInputTexture = 2;
 	static int selectedRightInputTexture = 1;
@@ -1318,11 +1318,11 @@ void VideodrommControllerApp::drawControlWindow()
 		{
 		ui::SetNextWindowSize(ImVec2(w, h));
 		ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPosRow2));
-		sprintf_s(buf, "%s ##fsh%d", mMixes[0]->getFboName(i).c_str(), i);
+		sprintf_s(buf, "%s ##fsh%d", mMixes[0]->getFboLabel(i).c_str(), i);
 		ui::Begin(buf, NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 		{
 
-		ui::PushID(i);
+		//ui::PushID(i);
 		ui::Image((void*)mMixes[0]->getFboTexture(i)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
 		/*ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
 		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
@@ -1345,7 +1345,7 @@ void VideodrommControllerApp::drawControlWindow()
 		if (ui::IsItemHovered()) ui::SetTooltip("Use Passthru Shader");
 
 		ui::PopStyleColor(3);*/
-		ui::PopID();
+		//ui::PopID();
 		}
 		ui::End();
 		}

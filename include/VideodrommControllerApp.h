@@ -20,8 +20,6 @@
 #include "VDAnimation.h"
 // Textures
 #include "VDMix.h"
-// UnionJack
-#include "UnionJack.h"
 // UI
 #include "VDUI.h"
 

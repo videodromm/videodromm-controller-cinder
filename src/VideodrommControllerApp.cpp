@@ -521,7 +521,7 @@ void VideodrommControllerApp::drawControlWindow()
 
 	ui::SetNextWindowSize(ImVec2(mVDSettings->mFboWidth, largePreviewH), ImGuiSetCond_Once);
 	ui::SetNextWindowPos(ImVec2(xPos, margin), ImGuiSetCond_Once);
-	sprintf_s(buf, "Videodromm Fps %c %d (target %.2f)###fps", "|/-\\"[(int)(ImGui::GetTime() / 0.25f) & 3], (int)mVDSettings->iFps, mVDSession->getTargetFps());
+	sprintf(buf, "Videodromm Fps %c %d (target %.2f)###fps", "|/-\\"[(int)(ImGui::GetTime() / 0.25f) & 3], (int)mVDSettings->iFps, mVDSession->getTargetFps());
 	ui::Begin(buf);
 	{
 		ImGui::PushItemWidth(mVDSettings->mPreviewFboWidth);
@@ -610,7 +610,7 @@ void VideodrommControllerApp::drawControlWindow()
 		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
 		ui::Begin("MIDI");
 		{
-			sprintf_s(buf, "Enable");
+			sprintf(buf, "Enable");
 			if (ui::Button(buf)) mVDRouter->midiSetup();
 			if (ui::CollapsingHeader("MidiIn", "20", true, true))
 			{
@@ -625,11 +625,11 @@ void VideodrommControllerApp::drawControlWindow()
 
 					if (mVDRouter->isMidiInConnected(i))
 					{
-						sprintf_s(buf, "Disconnect %d", i);
+						sprintf(buf, "Disconnect %d", i);
 					}
 					else
 					{
-						sprintf_s(buf, "Connect %d", i);
+						sprintf(buf, "Connect %d", i);
 					}
 
 					if (ui::Button(buf))
@@ -676,7 +676,7 @@ void VideodrommControllerApp::drawControlWindow()
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
 		ui::Text("c%d", i);
 		ui::NextColumn();
-		sprintf_s(buf, "%d", i);
+		sprintf(buf, "%d", i);
 		if (ui::SliderInt(buf, &mVDSettings->iChannels[i], 0, mVDSettings->MAX - 1)) {
 		}
 		ui::NextColumn();
@@ -1039,7 +1039,7 @@ void VideodrommControllerApp::drawControlWindow()
 			if (ui::SliderFloat("param2/min/max", &mVDSettings->iParam2, 0.01f, 100.0f))
 			{
 			}
-			sprintf_s(buf, "XorY");
+			sprintf(buf, "XorY");
 			mVDSettings->iXorY ^= ui::Button(buf);
 
 			// steps
@@ -1172,7 +1172,7 @@ void VideodrommControllerApp::drawControlWindow()
 		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.1f, 0.7f, 0.7f));
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
 
-		sprintf_s(buf, "FV##mix%d", 40);
+		sprintf(buf, "FV##mix%d", 40);
 		// weird ui::Image((void*)mVDTextures->getFboTextureId(mWarpFboIndex), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
 		ui::Image((void*)mMixes[0]->getTexture()->getId(), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
 
@@ -1195,7 +1195,7 @@ void VideodrommControllerApp::drawControlWindow()
 		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.1f, 0.7f, 0.7f));
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
 
-		sprintf_s(buf, "FV##f%d", 41);
+		sprintf(buf, "FV##f%d", 41);
 
 		ui::Image((void*)mImage->getId(), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
 
@@ -1220,12 +1220,12 @@ void VideodrommControllerApp::drawControlWindow()
 		if (mVDShaders->getShader(i).active)
 		{
 		TODO if (mVDSettings->iTrack == i) {
-		sprintf_s(buf, "SEL ##lsh%d", i);
+		sprintf(buf, "SEL ##lsh%d", i);
 		}
 		else {
-		sprintf_s(buf, "%d##lsh%d", mVDShaders->getShader(i).microseconds, i);
+		sprintf(buf, "%d##lsh%d", mVDShaders->getShader(i).microseconds, i);
 		}
-		sprintf_s(buf, "%s##lsh%d", mVDShaders->getShader(i).name.c_str(), i);
+		sprintf(buf, "%s##lsh%d", mVDShaders->getShader(i).name.c_str(), i);
 		ui::SetNextWindowSize(ImVec2(w, h));
 		ui::SetNextWindowPos(ImVec2(xPos + margin, yPos));
 		ui::Begin(buf, NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
@@ -1253,7 +1253,7 @@ void VideodrommControllerApp::drawControlWindow()
 		}
 		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.0f, 0.7f, 0.7f));
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.0f, 0.8f, 0.8f));
-		sprintf_s(buf, "L##s%d", i);
+		sprintf(buf, "L##s%d", i);
 		if (ui::Button(buf)) {
 		mVDSettings->mLeftFragIndex = i;// TODO send via OSC? selectShader(true, i);
 		mVDTextures->setFragForFbo(i, 1); // 2 = right;
@@ -1273,7 +1273,7 @@ void VideodrommControllerApp::drawControlWindow()
 		}
 		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.3f, 0.7f, 0.7f));
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.3f, 0.8f, 0.8f));
-		sprintf_s(buf, "R##s%d", i);
+		sprintf(buf, "R##s%d", i);
 		if (ui::Button(buf)) {
 		mVDSettings->mRightFragIndex = i;// TODO send via OSC? selectShader(false, i);
 		mVDTextures->setFragForFbo(i, 2); // 2 = right;
@@ -1293,7 +1293,7 @@ void VideodrommControllerApp::drawControlWindow()
 		}
 		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.6f, 0.7f, 0.7f));
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.6f, 0.8f, 0.8f));
-		sprintf_s(buf, "P##s%d", i);
+		sprintf(buf, "P##s%d", i);
 		if (ui::Button(buf)) mVDSettings->mPreviewFragIndex = i;
 		if (ui::IsItemHovered()) ui::SetTooltip("Preview shader");
 		ui::PopStyleColor(3);
@@ -1309,7 +1309,7 @@ void VideodrommControllerApp::drawControlWindow()
 		}
 		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.16f, 0.7f, 0.7f));
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.16f, 0.8f, 0.8f));
-		sprintf_s(buf, "1##s%d", i);
+		sprintf(buf, "1##s%d", i);
 		if (ui::Button(buf)) mVDSettings->mWarp1FragIndex = i;
 		if (ui::IsItemHovered()) ui::SetTooltip("Set warp 1 shader");
 		ui::PopStyleColor(3);
@@ -1326,7 +1326,7 @@ void VideodrommControllerApp::drawControlWindow()
 		}
 		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.77f, 0.7f, 0.7f));
 		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.77f, 0.8f, 0.8f));
-		sprintf_s(buf, "2##s%d", i);
+		sprintf(buf, "2##s%d", i);
 		if (ui::Button(buf)) mVDSettings->mWarp2FragIndex = i;
 		if (ui::IsItemHovered()) ui::SetTooltip("Set warp 2 shader");
 		ui::PopStyleColor(3);
@@ -1335,7 +1335,7 @@ void VideodrommControllerApp::drawControlWindow()
 		if (i > 4)
 		{
 		ui::SameLine();
-		sprintf_s(buf, "X##s%d", i);
+		sprintf(buf, "X##s%d", i);
 		if (ui::Button(buf)) mVDShaders->removePixelFragmentShaderAtIndex(i);
 		if (ui::IsItemHovered()) ui::SetTooltip("Remove shader");
 		}
@@ -1370,7 +1370,7 @@ void VideodrommControllerApp::drawControlWindow()
 	{
 	for (int i = 0; i < mBatchass->getWarpsRef()->getWarpsCount(); i++)
 	{
-	sprintf_s(buf, "Warp %d", i);
+	sprintf(buf, "Warp %d", i);
 	ui::SetNextWindowSize(ImVec2(w, h));
 	ui::Begin(buf);
 	{
@@ -1380,10 +1380,10 @@ void VideodrommControllerApp::drawControlWindow()
 	ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
 	ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
 	ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
-	sprintf_s(buf, "%d", mVDSettings->mWarpFbos[i].textureIndex);
+	sprintf(buf, "%d", mVDSettings->mWarpFbos[i].textureIndex);
 	if (ui::SliderInt(buf, &mVDSettings->mWarpFbos[i].textureIndex, 0, mVDSettings->MAX - 1)) {
 	}
-	sprintf_s(buf, "%s", warpInputs[mVDSettings->mWarpFbos[i].textureIndex]);
+	sprintf(buf, "%s", warpInputs[mVDSettings->mWarpFbos[i].textureIndex]);
 	ui::Text(buf);
 
 	ui::PopStyleColor(3);

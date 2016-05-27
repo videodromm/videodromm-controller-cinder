@@ -603,6 +603,7 @@ void VideodrommControllerApp::drawControlWindow()
 #pragma endregion Audio	
 		break;
 	case 1:
+#if defined( CINDER_MSW )
 		// Midi
 #pragma region MIDI
 
@@ -651,6 +652,7 @@ void VideodrommControllerApp::drawControlWindow()
 		}
 		ui::End();
 #pragma endregion MIDI
+#endif
 		break;
 	case 2:
 		// Channels

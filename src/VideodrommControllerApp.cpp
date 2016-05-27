@@ -1247,7 +1247,6 @@ void VideodrommControllerApp::drawControlWindow()
 					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
 
 					//if (ui::Button("Stop Load")) mVDImageSequences[0]->stopLoading();
-					//ui::SameLine();
 
 					/*if (mVDTextures->inputTextureIsSequence(i)) {
 					if (!(mVDTextures->inputTextureIsLoadingFromDisk(i))) {

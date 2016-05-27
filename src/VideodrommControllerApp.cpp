@@ -55,14 +55,6 @@ void VideodrommControllerApp::setup()
 	CI_LOG_V("Assets folder: " + mVDUtils->getPath("").string());
 	string imgSeqPath = mVDSession->getImageSequencePath();
 
-	// Audio
-	//mVDAudio = VDAudio::create(mVDSettings); // TODO check for line in presence RTE otherwise
-	// Shaders
-	//mVDShaders = VDShaders::create(mVDSettings);
-	// Textures
-	//mVDTextures = VDTextures::create(mVDSettings, mVDShaders, mVDAnimation, mVDSession);
-	// fbo indexes
-	//textFboIndex = imgSeqFboIndex = 0;
 	// Mix
 	mMixesFilepath = getAssetPath("") / "mixes.xml";
 	if (fs::exists(mMixesFilepath)) {
@@ -77,7 +69,10 @@ void VideodrommControllerApp::setup()
 	setFrameRate(mVDSession->getTargetFps());
 	mMovieDelay = mFadeInDelay = true;
 	mIsResizing = true;
+	mVDAnimation->tapTempo();
 	mVDUtils->getWindowsResolution();
+	// UI
+	mVDUI = VDUI::create(mVDSettings, mMixes[0]);
 
 	getWindow()->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
 	getWindow()->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawRenderWindow, this));
@@ -167,7 +162,7 @@ void VideodrommControllerApp::setup()
 	{
 		hideCursor();
 	}
-	mVDAnimation->tapTempo();
+
 }
 void VideodrommControllerApp::cleanup()
 {
@@ -1212,176 +1207,8 @@ void VideodrommControllerApp::drawControlWindow()
 
 #pragma endregion mix
 	xPos = margin;
-	switch (currentWindowRow2) {
-	case 0:
-		// textures
-		mVDSettings->mRenderThumbs = false;
+	showVDUI(currentWindowRow2);
 
-#pragma region textures
-		for (int f = 0; f < mMixes[0]->getFboCount(); f++) {
-			for (unsigned int i = 0; i < mMixes[0]->getInputTexturesCount(f); i++)
-			{
-				ui::SetNextWindowSize(ImVec2(w, h*1.4));
-				ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPosRow2 + (f*h*1.4)));
-				//ui::Begin(textureNames[i], NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-				ui::Begin(mMixes[0]->getInputTextureName(f, i).c_str(), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-				{
-					//BEGIN
-					/*sprintf_s(buf, "WS##s%d", i);
-					if (ui::Button(buf))
-					{
-					sprintf_s(buf, "IMG=%d.jpg", i);
-					//mBatchass->wsWrite(buf);
-					}
-					if (ui::IsItemHovered()) ui::SetTooltip("Send texture file name via WebSockets");
-					ui::SameLine();
-					sprintf(buf, "FV##s%d", i);
-					if (ui::Button(buf))
-					{
-					mVDTextures->flipTexture(i);
-					}*/
-					ui::PushID(i);
-					ui::Image((void*)mMixes[0]->getFboInputTexture(f, i)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
-					ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
-					ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
-					ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
-
-					//if (ui::Button("Stop Load")) mVDImageSequences[0]->stopLoading();
-
-					/*if (mVDTextures->inputTextureIsSequence(i)) {
-					if (!(mVDTextures->inputTextureIsLoadingFromDisk(i))) {
-					ui::SameLine();
-					sprintf_s(buf, "l##s%d", i);
-					if (ui::Button(buf))
-					{
-					mVDTextures->inputTextureToggleLoadingFromDisk(i);
-					}
-					if (ui::IsItemHovered()) ui::SetTooltip("Pause loading from disk");
-					}
-					ui::SameLine();
-					sprintf_s(buf, "p##s%d", i);
-					if (ui::Button(buf))
-					{
-					mVDTextures->inputTexturePlayPauseSequence(i);
-					}
-					if (ui::IsItemHovered()) ui::SetTooltip("Play/Pause");
-					ui::SameLine();
-					sprintf_s(buf, "b##s%d", i);
-					if (ui::Button(buf))
-					{
-					mVDTextures->inputTextureSyncToBeatSequence(i);
-					}
-					if (ui::IsItemHovered()) ui::SetTooltip("Sync to beat");
-					ui::SameLine();
-					sprintf_s(buf, "r##s%d", i);
-					if (ui::Button(buf))
-					{
-					mVDTextures->inputTextureReverseSequence(i);
-					}
-					if (ui::IsItemHovered()) ui::SetTooltip("Reverse");
-					playheadPositions[i] = mVDTextures->inputTextureGetPlayheadPosition(i);*/
-					/*sprintf_s(buf, "p%d##s%d", playheadPositions[i], i);
-					if (ui::Button(buf))
-					{
-					mVDTextures->inputTextureSetPlayheadPosition(i, playheadPositions[i]);
-					}*/
-					/*
-					if (ui::SliderInt("scrub", &playheadPositions[i], 0, mVDTextures->inputTextureGetMaxFrame(i)))
-					{
-					mVDTextures->inputTextureSetPlayheadPosition(i, playheadPositions[i]);
-					}
-					speeds[i] = mVDTextures->inputTextureGetSpeed(i);
-					if (ui::SliderInt("speed", &speeds[i], 0.0f, 6.0f))
-					{
-					mVDTextures->inputTextureSetSpeed(i, speeds[i]);
-					}
-
-					}*/
-					//END
-					ui::PopStyleColor(3);
-					ui::PopID();
-				}
-				ui::End();
-			}
-		}
-
-#pragma endregion textures
-		break;
-	case 1:
-		// Fbos
-
-#pragma region fbos
-		mVDSettings->mRenderThumbs = true;
-
-		for (int i = 0; i < mMixes[0]->getFboCount(); i++)
-		{
-		ui::SetNextWindowSize(ImVec2(w, h));
-		ui::SetNextWindowPos(ImVec2((i * (w + inBetween)) + margin, yPosRow2));
-		sprintf_s(buf, "%s ##fshf%d", mMixes[0]->getFboLabel(i).c_str(), i);
-		ui::Begin(buf, NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-		{
-
-		ui::PushID(i);
-		ui::Image((void*)mMixes[0]->getFboTexture(i)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
-		
-		for (unsigned int t = 0; t < mMixes[0]->getInputTexturesCount(i); t++) {
-			ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(t / 7.0f, 0.6f, 0.6f));
-			ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(t / 7.0f, 0.7f, 0.7f));
-			ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(t / 7.0f, 0.8f, 0.8f));
-
-			sprintf_s(buf, "%d##fboit%d%d", t, i, t);
-			if (ui::Button(buf)) mMixes[0]->setFboInputTexture(i, t);
-			if (ui::IsItemHovered()) ui::SetTooltip("Set input texture");
-			ui::SameLine();
-			ui::PopStyleColor(3);
-
-		}/*ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
-		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
-		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
-
-		sprintf_s(buf, "FV##fbo%d", i);
-		if (ui::Button(buf)) mVDTextures->flipFboV(i);
-		if (ui::IsItemHovered()) ui::SetTooltip("Flip vertically");
-		ui::SameLine();
-		sprintf_s(buf, "S##fbo%d", i);
-		if (ui::Button(buf)) mVDTextures->saveThumb(i);
-		if (ui::IsItemHovered()) ui::SetTooltip("Save thumb");
-
-		sprintf_s(buf, "MX##fbo%d", i);
-		if (ui::Button(buf)) mVDTextures->useMixShader(i);
-		if (ui::IsItemHovered()) ui::SetTooltip("Use Mix Shader");
-		ui::SameLine();
-		sprintf_s(buf, "PA##fbo%d", i);
-		if (ui::Button(buf)) mVDTextures->usePassthruShader(i);
-		if (ui::IsItemHovered()) ui::SetTooltip("Use Passthru Shader");
-
-		ui::PopStyleColor(3);*/
-		ui::PopID();
-		}
-		ui::End();
-		}
-
-
-#pragma endregion fbos
-		break;
-	case 2:
-		// Shaders
-		if (ImGui::TreeNode("Multi-line Text Input"))
-		{
-			static bool read_only = false;
-			static char text[1024 * 16] =
-				"/*\n"
-				" Fragment shader.\n"
-				"*/\n\n"
-				"label:\n"
-				"\ttabbed\n";
-
-			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-			ImGui::Checkbox("Read-only", &read_only);
-			ImGui::PopStyleVar();
-			ImGui::InputTextMultiline("##source", text, IM_ARRAYSIZE(text), ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput | (read_only ? ImGuiInputTextFlags_ReadOnly : 0));
-			ImGui::TreePop();
-		}
 #pragma region library
 		/*mVDSettings->mRenderThumbs = true;
 
@@ -1522,8 +1349,7 @@ void VideodrommControllerApp::drawControlWindow()
 		} // for
 		*/
 #pragma endregion library
-		break;
-	}
+
 	xPos = margin;
 	switch (currentWindowRow3) {
 
@@ -1576,6 +1402,10 @@ void VideodrommControllerApp::updateWindowTitle()
 {
 	getWindow()->setTitle("(" + mVDSettings->sFps + " fps) " + toString(mVDSettings->iBeat) + " Videodromm");
 
+}
+// UI
+void VideodrommControllerApp::showVDUI(unsigned int window) {
+	mVDUI->Run("UI", window);
 }
 // If you're deploying to iOS, set the Render antialiasing to 0 for a significant
 // performance improvement. This value defaults to 4 (AA_MSAA_4) on iOS and 16 (AA_MSAA_16)

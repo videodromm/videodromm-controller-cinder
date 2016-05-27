@@ -20,16 +20,10 @@
 #include "VDAnimation.h"
 // Textures
 #include "VDMix.h"
-// Shaders
-//#include "VDShaders.h"
-// Audio
-//#include "VDAudio.h"
-// fbo
-//#include "VDFbo.h"
 // UnionJack
 #include "UnionJack.h"
-// Console
-#include "VDConsole.h"
+// UI
+#include "VDUI.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -75,18 +69,13 @@ private:
 	VDRouterRef					mVDRouter;
 	// Animation
 	VDAnimationRef				mVDAnimation;
+	// UI
+	VDUIRef						mVDUI;
+	void						showVDUI(unsigned int window);
 	// Mix
 	VDMixList					mMixes;
 	fs::path					mMixesFilepath;
 
-	// Audio
-	//VDAudioRef					mVDAudio;
-	// Shaders
-	//VDShadersRef				mVDShaders;
-	// Textures
-	//VDTexturesRef				mVDTextures;
-	//int							imgSeqFboIndex;
-	//int							textFboIndex;
 	// window mgmt
 	WindowRef					mControlWindow;
 	bool						mIsResizing;

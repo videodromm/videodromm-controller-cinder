@@ -325,16 +325,14 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 	{
 		if (index < 1) index = 1;
 		if (index > 3) index = 3;
-		mMixes[0]->loadImageFile(mFile, 0, 0, true);
+		mMixes[0]->loadImageFile(mFile, index, true);
 	}
 	else if (ext == "glsl")
 	{
+		if (index > mMixes[0]->getFboCount() - 1) index = mMixes[0]->getFboCount() - 1;
 		int rtn = mMixes[0]->loadFboFragmentShader(mFile, index);
-		/*if (index < 0) index = 0;
-		if (index > mVDTextures->getFboCount() - 1) index = mVDTextures->getFboCount() - 1;
-		int rtn = mVDTextures->loadPixelFragmentShaderAtIndex(index, mFile);*/
-		if (rtn > -1)
-		{
+		if (rtn > -1) {
+			// load success
 			// reset zoom
 			mVDAnimation->controlValues[22] = 1.0f;
 		}

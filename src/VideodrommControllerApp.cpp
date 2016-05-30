@@ -129,7 +129,7 @@ void VideodrommControllerApp::setup()
 	}
 	//Warp::setSize(mWarps, ivec2(mVDSettings->mFboWidth, mVDSettings->mFboHeight));
 	Warp::setSize(mWarps, ivec2(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight));
-	mWarpFboIndex = 0;
+	mWarpFboIndex = 1;
 	//Warp::setSize(mWarps, mImage->getSize());
 	mSaveThumbTimer = 0.0f;
 
@@ -252,6 +252,15 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 				//mVDTextures->playMovie();
 				//mVDAnimation->currentScene++;
 				//if (mMovie) { if (mMovie->isPlaying()) mMovie->stop(); else mMovie->play(); }
+				break;
+			case KeyEvent::KEY_0:
+				mWarpFboIndex = 0;
+				break;
+			case KeyEvent::KEY_1:
+				mWarpFboIndex = 1;
+				break;
+			case KeyEvent::KEY_2:
+				mWarpFboIndex = 2;
 				break;
 			case KeyEvent::KEY_l:
 				mVDAnimation->load();
@@ -1105,107 +1114,7 @@ void VideodrommControllerApp::drawControlWindow()
 	ui::End();
 
 #pragma endregion Global
-	xPos = margin;
 
-#pragma region left
-	// push color for this chain, must be popped at the end
-	ui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.0f, 1.0f, 0.0f, 1.00f));
-
-	ui::SetNextWindowSize(ImVec2(largePreviewW, largePreviewH), ImGuiSetCond_Once);
-	ui::SetNextWindowPos(ImVec2(xPos, yPosRow1), ImGuiSetCond_Once);
-	ui::Begin("Left input texture");
-	{
-		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
-		ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.1f, 0.6f, 0.6f));
-		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.1f, 0.7f, 0.7f));
-		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
-
-		ui::Image((void*)mMixes[0]->getLeftFboTexture()->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
-
-		//ui::SliderInt("Input", &selectedLeftInputTexture, 0, mVDTextures->getInputTexturesCount() - 1);
-
-		ui::PopStyleColor(3);
-		ui::PopItemWidth();
-	}
-	ui::End();
-	xPos += largePreviewW + margin;
-
-	// pop color for this chain
-	ui::PopStyleColor(1);
-#pragma endregion left
-
-#pragma region right
-	// push color for this chain, must be popped at the end
-	ui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.0f, 1.0f, 0.0f, 1.00f));
-
-	ui::SetNextWindowSize(ImVec2(largePreviewW, largePreviewH), ImGuiSetCond_Once);
-	ui::SetNextWindowPos(ImVec2(xPos, yPosRow1), ImGuiSetCond_Once);
-	ui::Begin("Right input texture");
-	{
-		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
-		ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.1f, 0.6f, 0.6f));
-		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.1f, 0.7f, 0.7f));
-		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
-
-		ui::Image((void*)mMixes[0]->getRightFboTexture()->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
-
-		//ui::SliderInt("Input", &selectedRightInputTexture, 0, mVDTextures->getInputTexturesCount() - 1);
-
-		ui::PopStyleColor(3);
-		ui::PopItemWidth();
-	}
-	ui::End();
-	xPos += largePreviewW + margin;
-
-	// pop color for this chain
-	ui::PopStyleColor(1);
-#pragma endregion right
-
-#pragma region mix
-	// left/warp1 fbo
-	ui::SetNextWindowSize(ImVec2(largePreviewW, largePreviewH), ImGuiSetCond_Once);
-	ui::SetNextWindowPos(ImVec2(xPos, yPosRow1), ImGuiSetCond_Once);
-	ui::Begin("Left/warp1 fbo");
-	{
-		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
-		ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.1f, 0.6f, 0.6f));
-		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.1f, 0.7f, 0.7f));
-		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
-
-		sprintf(buf, "FV##mix%d", 40);
-		// weird ui::Image((void*)mVDTextures->getFboTextureId(mWarpFboIndex), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
-		ui::Image((void*)mMixes[0]->getTexture()->getId(), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
-
-		//ui::SliderInt("Fbo", &mWarpFboIndex, 0, mVDTextures->getFboCount() - 1);
-
-		ui::PopStyleColor(3);
-		ui::PopItemWidth();
-	}
-	ui::End();
-	xPos += largePreviewW + margin;
-
-	// right/warp2 fbo
-	ui::SetNextWindowSize(ImVec2(largePreviewW, largePreviewH), ImGuiSetCond_Once);
-	ui::SetNextWindowPos(ImVec2(xPos, yPosRow1), ImGuiSetCond_Once);
-	ui::Begin("Right/warp2 fbo");
-	{
-		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
-
-		ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0.1f, 0.6f, 0.6f));
-		ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0.1f, 0.7f, 0.7f));
-		ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0.1f, 0.8f, 0.8f));
-
-		sprintf(buf, "FV##f%d", 41);
-
-		ui::Image((void*)mImage->getId(), ivec2(mVDSettings->mPreviewWidth, mVDSettings->mPreviewHeight));
-
-		ui::PopStyleColor(3);
-		ui::PopItemWidth();
-	}
-	ui::End();
-	xPos += largePreviewW + margin;
-
-#pragma endregion mix
 	xPos = margin;
 	showVDUI(currentWindowRow2);
 
@@ -1352,13 +1261,9 @@ void VideodrommControllerApp::drawControlWindow()
 
 	xPos = margin;
 	switch (currentWindowRow3) {
-
-
 	case 3:
 		// Blendmodes
-
 		break;
-
 	}
 
 	// next line

@@ -78,28 +78,10 @@ private:
 	WindowRef					mControlWindow;
 	bool						mIsResizing;
 	// imgui
-	float						color[4];
-	float						backcolor[4];
+
 	int							playheadPositions[12];
 	int							speeds[12];
 	// mPreviewFboWidth 80 mPreviewFboHeight 60 margin 10 inBetween 15
-	int							w;
-	int							h;
-	int							displayHeight;
-	int							xPos;
-	int							xPosCol1;
-	int							xPosCol2;
-	int							xPosCol3;
-	int							yPos;
-	int							yPosRow1;
-	int							yPosRow2;
-	int							yPosRow3;
-	int							largeW;
-	int							largeH;
-	int							largePreviewW;
-	int							largePreviewH;
-	int							margin;
-	int							inBetween;
 
 	float						f = 0.0f;
 	char						buf[64];

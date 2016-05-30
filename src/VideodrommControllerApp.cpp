@@ -72,7 +72,7 @@ void VideodrommControllerApp::setup()
 	mVDAnimation->tapTempo();
 	mVDUtils->getWindowsResolution();
 	// UI
-	mVDUI = VDUI::create(mVDSettings, mMixes[0], mVDRouter, mVDAnimation);
+	mVDUI = VDUI::create(mVDSettings, mMixes[0], mVDRouter, mVDAnimation, mVDSession);
 
 	getWindow()->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
 	getWindow()->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawRenderWindow, this));
@@ -134,25 +134,7 @@ void VideodrommControllerApp::setup()
 	mSaveThumbTimer = 0.0f;
 
 	// imgui
-	margin = 3;
-	inBetween = 3;
-	// mPreviewFboWidth 80 mPreviewFboHeight 60 margin 10 inBetween 15 mPreviewWidth = 160;mPreviewHeight = 120;
-	w = mVDSettings->mPreviewFboWidth + margin;
-	h = mVDSettings->mPreviewFboHeight * 2.3;
-	largeW = (mVDSettings->mPreviewFboWidth + margin) * 4;
-	largeH = (mVDSettings->mPreviewFboHeight + margin) * 5;
-	largePreviewW = mVDSettings->mPreviewWidth + margin;
-	largePreviewH = (mVDSettings->mPreviewHeight + margin) * 2.4;
-	displayHeight = mVDSettings->mMainWindowHeight - 50;
-	yPosRow1 = largePreviewH + margin;
-	yPosRow2 = yPosRow1 + largePreviewH + margin;
-	yPosRow3 = yPosRow2 + h*1.4 + margin;
-	xPosCol1 = mVDSettings->mFboWidth + margin;
-	xPosCol2 = xPosCol1 + margin + largeW;
-	xPosCol3 = xPosCol2 + margin;
-
 	mouseGlobal = false;
-	static float f = 0.0f;
 	// mouse cursor
 	if (mVDSettings->mCursorVisible)
 	{
@@ -317,7 +299,7 @@ void VideodrommControllerApp::update()
 }
 void VideodrommControllerApp::fileDrop(FileDropEvent event)
 {
-	int index = (int)(event.getX() / (margin + w));
+	int index = (int)(event.getX() / (mVDSettings->uiMargin + mVDSettings->uiElementWidth));
 	string ext = "";
 	// use the last of the dropped files
 	boost::filesystem::path mPath = event.getFile(event.getNumFiles() - 1);
@@ -454,7 +436,7 @@ void VideodrommControllerApp::drawControlWindow()
 		style.FramePadding = ImVec2(2, 2);
 		style.ItemSpacing = ImVec2(3, 3);
 		style.ItemInnerSpacing = ImVec2(3, 3);
-		style.WindowMinSize = ImVec2(w, mVDSettings->mPreviewFboHeight);
+		style.WindowMinSize = ImVec2(mVDSettings->uiElementWidth, mVDSettings->mPreviewFboHeight);
 		// new style
 		style.Alpha = 1.0;
 		style.WindowFillAlphaDefault = 0.83;
@@ -521,13 +503,12 @@ void VideodrommControllerApp::drawControlWindow()
 	static int selectedLeftInputTexture = 2;
 	static int selectedRightInputTexture = 1;
 
-	xPos = margin;
 	const char* warpInputs[] = { "mix", "left", "right", "warp1", "warp2", "preview", "abp", "live", "w8", "w9", "w10", "w11", "w12", "w13", "w14", "w15" };
 
 #pragma region Info
 
-	ui::SetNextWindowSize(ImVec2(mVDSettings->mFboWidth, largePreviewH), ImGuiSetCond_Once);
-	ui::SetNextWindowPos(ImVec2(xPos, margin), ImGuiSetCond_Once);
+	ui::SetNextWindowSize(ImVec2(mVDSettings->mFboWidth, mVDSettings->uiLargePreviewH), ImGuiSetCond_Once);
+	ui::SetNextWindowPos(ImVec2(mVDSettings->uiXPos, mVDSettings->uiYPosRow1), ImGuiSetCond_Once);
 	sprintf(buf, "Videodromm Fps %c %d (target %.2f)###fps", "|/-\\"[(int)(ImGui::GetTime() / 0.25f) & 3], (int)mVDSettings->iFps, mVDSession->getTargetFps());
 	ui::Begin(buf);
 	{
@@ -582,8 +563,8 @@ void VideodrommControllerApp::drawControlWindow()
 	case 0:
 		// Audio
 #pragma region Audio
-		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
+		ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargeW, mVDSettings->uiLargePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(mVDSettings->uiXPosCol1, mVDSettings->uiMargin), ImGuiSetCond_Once);
 		ui::Begin("Audio");
 		{
 			static ImVector<float> timeValues; if (timeValues.empty()) { timeValues.resize(40); memset(&timeValues.front(), 0, timeValues.size()*sizeof(float)); }
@@ -614,8 +595,8 @@ void VideodrommControllerApp::drawControlWindow()
 		// Midi
 #pragma region MIDI
 
-		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
+		ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargeW, mVDSettings->uiLargePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(mVDSettings->uiXPosCol1, mVDSettings->uiMargin), ImGuiSetCond_Once);
 		ui::Begin("MIDI");
 		{
 			sprintf(buf, "Enable");
@@ -665,8 +646,7 @@ void VideodrommControllerApp::drawControlWindow()
 		// Channels
 
 #pragma region channels
-		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
+
 
 		/*ui::Begin("Channels");
 		{
@@ -703,8 +683,8 @@ void VideodrommControllerApp::drawControlWindow()
 	case 3:
 		// Mouse
 #pragma region mouse
-		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
+		ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargeW, mVDSettings->uiLargePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(mVDSettings->uiXPosCol1, mVDSettings->uiMargin), ImGuiSetCond_Once);
 
 		ui::Begin("Mouse");
 		{
@@ -733,8 +713,8 @@ void VideodrommControllerApp::drawControlWindow()
 	case 4:
 		// Effects
 #pragma region effects
-		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
+		ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargeW, mVDSettings->uiLargePreviewH), ImGuiSetCond_Once);
+		ui::SetNextWindowPos(ImVec2(mVDSettings->uiXPosCol1, mVDSettings->uiMargin), ImGuiSetCond_Once);
 
 		ui::Begin("Effects");
 		{
@@ -799,139 +779,12 @@ void VideodrommControllerApp::drawControlWindow()
 	case 5:
 		// Color
 #pragma region Color
-		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
-
-		ui::Begin("Color");
-		{
-			stringstream sParams;
-			bool colorChanged = false;
-			sParams << "{\"params\" :[{\"name\" : 0,\"value\" : " << getElapsedFrames() << "}"; // TimeStamp
-			// foreground color
-			color[0] = mVDAnimation->controlValues[1];
-			color[1] = mVDAnimation->controlValues[2];
-			color[2] = mVDAnimation->controlValues[3];
-			color[3] = mVDAnimation->controlValues[4];
-			ui::ColorEdit4("f", color);
-
-			for (int i = 0; i < 4; i++)
-			{
-				if (mVDAnimation->controlValues[i + 1] != color[i])
-				{
-					sParams << ",{\"name\" : " << i + 1 << ",\"value\" : " << color[i] << "}";
-					mVDAnimation->controlValues[i + 1] = color[i];
-					colorChanged = true;
-				}
-			}
-			if (colorChanged) mVDRouter->colorWrite(); //lights4events
-
-			// background color
-			backcolor[0] = mVDAnimation->controlValues[5];
-			backcolor[1] = mVDAnimation->controlValues[6];
-			backcolor[2] = mVDAnimation->controlValues[7];
-			backcolor[3] = mVDAnimation->controlValues[8];
-			ui::ColorEdit4("g", backcolor);
-			for (int i = 0; i < 4; i++)
-			{
-				if (mVDAnimation->controlValues[i + 5] != backcolor[i])
-				{
-					sParams << ",{\"name\" : " << i + 5 << ",\"value\" : " << backcolor[i] << "}";
-					mVDAnimation->controlValues[i + 5] = backcolor[i];
-				}
-
-			}
-			// color multipliers
-			if (ui::Button("x##RedX")) { mVDSettings->iRedMultiplier = 1.0f; }
-			ui::SameLine();
-			if (ui::SliderFloat("RedX", &mVDSettings->iRedMultiplier, 0.0f, 3.0f))
-			{
-			}
-			if (ui::Button("x##GreenX")) { mVDSettings->iGreenMultiplier = 1.0f; }
-			ui::SameLine();
-			if (ui::SliderFloat("GreenX", &mVDSettings->iGreenMultiplier, 0.0f, 3.0f))
-			{
-			}
-			if (ui::Button("x##BlueX")) { mVDSettings->iBlueMultiplier = 1.0f; }
-			ui::SameLine();
-			if (ui::SliderFloat("BlueX", &mVDSettings->iBlueMultiplier, 0.0f, 3.0f))
-			{
-			}
-
-			sParams << "]}";
-			string strParams = sParams.str();
-			if (strParams.length() > 60)
-			{
-				mVDRouter->sendJSON(strParams);
-			}
-		}
-		ui::End();
 
 
 #pragma endregion Color
 		break;
 	case 6:
-		// Tempo
-#pragma region Tempo
-		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
 
-		ui::Begin("Tempo");
-		{
-			if (ui::Button("x##spdx")) { mVDSettings->iSpeedMultiplier = 1.0; }
-			ui::SameLine();
-			ui::SliderFloat("speed x", &mVDSettings->iSpeedMultiplier, 0.01f, 5.0f, "%.1f");
-
-			ui::Text("Beat %d ", mVDSettings->iBeat);
-			ui::SameLine();
-			ui::Text("Beat Idx %d ", mVDAnimation->iBeatIndex);
-			//ui::SameLine();
-			//ui::Text("Bar %d ", mVDAnimation->iBar);
-
-
-			if (ui::Button("x##bpbx")) { mVDSession->iBeatsPerBar = 1; }
-			ui::SameLine();
-			ui::SliderInt("beats/bar", &mVDSession->iBeatsPerBar, 1, 8);
-
-
-			ui::Text("Time %.2f", mVDSettings->iGlobalTime);
-			ui::SameLine();
-			ui::Text("Trk %s %.2f", mVDSettings->mTrackName.c_str(), mVDSettings->liveMeter);
-			//			ui::Checkbox("Playing", &mVDSettings->mIsPlaying);
-
-			ui::Text("Tempo %.2f ", mVDSession->getBpm());
-
-
-			if (ui::Button("Tap tempo")) { mVDAnimation->tapTempo(); }
-
-			if (ui::Button("Time tempo")) { mVDAnimation->mUseTimeWithTempo = !mVDAnimation->mUseTimeWithTempo; }
-
-
-			//void Batchass::setTimeFactor(const int &aTimeFactor)
-			ui::SliderFloat("time x", &mVDAnimation->iTimeFactor, 0.0001f, 1.0f, "%.01f");
-			ui::SameLine();
-
-		}
-		ui::End();
-
-
-#pragma endregion Tempo
-		break;
-	case 7:
-		// Blend
-#pragma region Blend
-		ui::SetNextWindowSize(ImVec2(largeW, largePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(xPosCol1, margin), ImGuiSetCond_Once);
-
-		ui::Begin("Blend");
-		{
-			// blend modes
-			if (ui::Button("x##blendmode")) { mVDSettings->iBlendMode = 0.0f; }
-			ui::SameLine();
-			ui::SliderInt("blendmode", &mVDSettings->iBlendMode, 0, mVDAnimation->maxBlendMode);
-
-		}
-		ui::End();
-#pragma endregion Blend
 		break;
 	}
 
@@ -940,7 +793,7 @@ void VideodrommControllerApp::drawControlWindow()
 
 #pragma endregion Global
 
-	xPos = margin;
+	
 	showVDUI(currentWindowRow2);
 
 #pragma region library
@@ -1084,15 +937,12 @@ void VideodrommControllerApp::drawControlWindow()
 		*/
 #pragma endregion library
 
-	xPos = margin;
+	
 	switch (currentWindowRow3) {
 	case 3:
 		// Blendmodes
 		break;
 	}
-
-	// next line
-	xPos = margin;
 
 	/*
 	#pragma region warps

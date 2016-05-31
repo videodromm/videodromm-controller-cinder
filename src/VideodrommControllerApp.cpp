@@ -290,9 +290,11 @@ void VideodrommControllerApp::update()
 	mVDSettings->sFps = toString(floor(mVDSettings->iFps));
 	mVDAnimation->update();
 
-	//mVDTextures->update();
-	//mVDAudio->update();
 	mVDRouter->update();
+	// check if a shader has been received from websockets
+	if (mVDSettings->mShaderToLoad != "") {
+		mMixes[0]->loadFboFragmentShader(mVDSettings->mShaderToLoad, 1);
+	}
 	updateWindowTitle();
 
 	//renderSceneToFbo();
@@ -417,6 +419,7 @@ void VideodrommControllerApp::drawRenderWindow()
 //}
 void VideodrommControllerApp::drawControlWindow()
 {
+	ImGuiStyle& style = ui::GetStyle();
 	if (mIsResizing) {
 		mIsResizing = false;
 		if (mVDSettings->mStandalone) {
@@ -430,7 +433,6 @@ void VideodrommControllerApp::drawControlWindow()
 
 #pragma region style
 		// our theme variables
-		ImGuiStyle& style = ui::GetStyle();
 
 		style.WindowPadding = ImVec2(3, 3);
 		style.FramePadding = ImVec2(2, 2);
@@ -497,153 +499,38 @@ void VideodrommControllerApp::drawControlWindow()
 	//gl::color(Color::white());
 	gl::setMatricesWindow(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight, false);
 	// imgui
-	static int currentWindowRow1 = 0;
-	static int currentWindowRow2 = 1;
-	static int currentWindowRow3 = 0;
-	static int selectedLeftInputTexture = 2;
-	static int selectedRightInputTexture = 1;
 
-	const char* warpInputs[] = { "mix", "left", "right", "warp1", "warp2", "preview", "abp", "live", "w8", "w9", "w10", "w11", "w12", "w13", "w14", "w15" };
-
-#pragma region Info
-
-	ui::SetNextWindowSize(ImVec2(mVDSettings->mFboWidth, mVDSettings->uiLargePreviewH), ImGuiSetCond_Once);
-	ui::SetNextWindowPos(ImVec2(mVDSettings->uiXPos, mVDSettings->uiYPosRow1), ImGuiSetCond_Once);
-	sprintf(buf, "Videodromm Fps %c %d (target %.2f)###fps", "|/-\\"[(int)(ImGui::GetTime() / 0.25f) & 3], (int)mVDSettings->iFps, mVDSession->getTargetFps());
-	ui::Begin(buf);
-	{
-		ImGui::PushItemWidth(mVDSettings->mPreviewFboWidth);
-		ImGui::RadioButton("Audio", &currentWindowRow1, 0); ImGui::SameLine();
-		ImGui::RadioButton("Midi", &currentWindowRow1, 1); ImGui::SameLine();
-		ImGui::RadioButton("Chn", &currentWindowRow1, 2); ui::SameLine();
-		ImGui::RadioButton("Mouse", &currentWindowRow1, 3); ui::SameLine();
-		ImGui::RadioButton("Effects", &currentWindowRow1, 4); ui::SameLine();
-		ImGui::RadioButton("Color", &currentWindowRow1, 5); ui::SameLine();
-		ImGui::RadioButton("Tempo", &currentWindowRow1, 6); ui::SameLine();
-		ImGui::RadioButton("Blend", &currentWindowRow1, 7);
-
-		ImGui::RadioButton("Textures", &currentWindowRow2, 0); ImGui::SameLine();
-		ImGui::RadioButton("Fbos", &currentWindowRow2, 1); ImGui::SameLine();
-		ImGui::RadioButton("Shaders", &currentWindowRow2, 2);
-
-		// fps
-		static ImVector<float> values; if (values.empty()) { values.resize(100); memset(&values.front(), 0, values.size()*sizeof(float)); }
-		static int values_offset = 0;
-		static float refresh_time = -1.0f;
-		if (ui::GetTime() > refresh_time + 1.0f / 6.0f)
+#pragma region menu
+	if (ImGui::BeginMainMenuBar()) {
+		if (ImGui::BeginMenu("File"))
 		{
-			refresh_time = ui::GetTime();
-			values[values_offset] = mVDSettings->iFps;
-			values_offset = (values_offset + 1) % values.size();
+			if (ImGui::MenuItem("New")) {}
+			if (ImGui::MenuItem("Open", "Ctrl+O")) {}
+			if (ImGui::BeginMenu("Open Recent"))
+			{
+				ImGui::MenuItem("live.frag");
+				ImGui::EndMenu();
+			}
+			if (ImGui::MenuItem("Save", "Ctrl+S")) {
+				// save warp settings
+				Warp::writeSettings(mWarps, writeFile("warps1.xml"));
+				// save params
+				mVDSettings->save();
+			}
+			if (ImGui::MenuItem("Debug")) {}
+			ImGui::EndMenu();
 		}
-		if (mVDSettings->iFps < 12.0) ui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
-		ui::PlotLines("FPS", &values.front(), (int)values.size(), values_offset, mVDSettings->sFps.c_str(), 0.0f, mVDSession->getTargetFps(), ImVec2(0, 30));
-		if (mVDSettings->iFps < 12.0) ui::PopStyleColor();
-
-		ui::PopItemWidth();
-		//ui::SameLine();
-		//ui::Text("Target fps: %d", mVDSession->getTargetFps());
-
-		mVDSettings->iDebug ^= ui::Button("Debug");
-		ui::SameLine();
-		if (ui::Button("Save Params"))
+		if (ImGui::BeginMenu("Options"))
 		{
-			// save warp settings
-			Warp::writeSettings(mWarps, writeFile("warps1.xml"));
-			// save params
-			mVDSettings->save();
+			ImGui::DragFloat("Global Alpha", &style.Alpha, 0.005f, 0.20f, 1.0f, "%.2f");
+			ImGui::EndMenu();
 		}
-		ui::Text("Msg: %s", mVDSettings->mMsg.c_str());
-
+		if (ImGui::MenuItem("Quit", "Alt+F4")) { cleanup(); }
+		ImGui::EndMainMenuBar();
 	}
-	ui::End();
+#pragma endregion menu
 
-#pragma endregion Info
-	switch (currentWindowRow1) {
-	case 0:
-		// Audio
-#pragma region Audio
-		ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargeW, mVDSettings->uiLargePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(mVDSettings->uiXPosCol1, mVDSettings->uiMargin), ImGuiSetCond_Once);
-		ui::Begin("Audio");
-		{
-			static ImVector<float> timeValues; if (timeValues.empty()) { timeValues.resize(40); memset(&timeValues.front(), 0, timeValues.size()*sizeof(float)); }
-			static int timeValues_offset = 0;
-			// audio maxVolume
-			static float tRefresh_time = -1.0f;
-			if (ui::GetTime() > tRefresh_time + 1.0f / 20.0f)
-			{
-				tRefresh_time = ui::GetTime();
-				timeValues[timeValues_offset] = mVDAnimation->maxVolume;
-				timeValues_offset = (timeValues_offset + 1) % timeValues.size();
-			}
-
-			ui::SliderFloat("mult x", &mVDAnimation->controlValues[13], 0.01f, 10.0f);
-
-			//ImGui::PlotHistogram("Histogram", mVDTextures->getSmallSpectrum(), 7, 0, NULL, 0.0f, 255.0f, ImVec2(0, 30));
-
-			if (mVDAnimation->maxVolume > 240.0) ui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
-			ui::PlotLines("Volume", &timeValues.front(), (int)timeValues.size(), timeValues_offset, toString(mVDUtils->formatFloat(mVDAnimation->maxVolume)).c_str(), 0.0f, 255.0f, ImVec2(0, 30));
-			if (mVDAnimation->maxVolume > 240.0) ui::PopStyleColor();
-		}
-		ui::End();
-
-#pragma endregion Audio	
-		break;
-	case 1:
-#if defined( CINDER_MSW )
-		// Midi
-#pragma region MIDI
-
-		ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargeW, mVDSettings->uiLargePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(mVDSettings->uiXPosCol1, mVDSettings->uiMargin), ImGuiSetCond_Once);
-		ui::Begin("MIDI");
-		{
-			sprintf(buf, "Enable");
-			if (ui::Button(buf)) mVDRouter->midiSetup();
-			if (ui::CollapsingHeader("MidiIn", "20", true, true))
-			{
-				ui::Columns(2, "data", true);
-				ui::Text("Name"); ui::NextColumn();
-				ui::Text("Connect"); ui::NextColumn();
-				ui::Separator();
-
-				for (int i = 0; i < mVDRouter->getMidiInPortsCount(); i++)
-				{
-					ui::Text(mVDRouter->getMidiInPortName(i).c_str()); ui::NextColumn();
-
-					if (mVDRouter->isMidiInConnected(i))
-					{
-						sprintf(buf, "Disconnect %d", i);
-					}
-					else
-					{
-						sprintf(buf, "Connect %d", i);
-					}
-
-					if (ui::Button(buf))
-					{
-						if (mVDRouter->isMidiInConnected(i))
-						{
-							mVDRouter->closeMidiInPort(i);
-						}
-						else
-						{
-							mVDRouter->openMidiInPort(i);
-						}
-					}
-					ui::NextColumn();
-					ui::Separator();
-				}
-				ui::Columns(1);
-			}
-		}
-		ui::End();
-#pragma endregion MIDI
-#endif
-		break;
-	case 2:
-		// Channels
+	showVDUI((int)getAverageFps());
 
 #pragma region channels
 
@@ -679,8 +566,7 @@ void VideodrommControllerApp::drawControlWindow()
 
 
 #pragma endregion channels
-		break;
-	case 3:
+		
 		// Mouse
 #pragma region mouse
 		ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargeW, mVDSettings->uiLargePreviewH), ImGuiSetCond_Once);
@@ -699,7 +585,6 @@ void VideodrommControllerApp::drawControlWindow()
 			}
 			else
 			{
-
 				mVDSettings->iMouse.z = ui::Button("mouse click");
 			}
 			ui::SliderFloat("MouseX", &mVDSettings->mRenderPosXY.x, 0, mVDSettings->mFboWidth);
@@ -709,92 +594,8 @@ void VideodrommControllerApp::drawControlWindow()
 
 
 #pragma endregion mouse
-		break;
-	case 4:
-		// Effects
-#pragma region effects
-		ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargeW, mVDSettings->uiLargePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(mVDSettings->uiXPosCol1, mVDSettings->uiMargin), ImGuiSetCond_Once);
+		
 
-		ui::Begin("Effects");
-		{
-			int hue = 0;
-
-			(mVDSettings->iRepeat) ? ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(hue / 7.0f, 1.0f, 0.5f)) : ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(1.0f, 0.1f, 0.1f));
-			ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(hue / 7.0f, 0.7f, 0.7f));
-			ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(hue / 7.0f, 0.8f, 0.8f));
-			mVDSettings->iRepeat ^= ui::Button("repeat");
-			ui::PopStyleColor(3);
-			hue++;
-			ui::SameLine();
-
-			(mVDAnimation->controlValues[45]) ? ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(hue / 7.0f, 1.0f, 0.5f)) : ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(1.0f, 0.1f, 0.1f));
-			ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(hue / 7.0f, 0.7f, 0.7f));
-			ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(hue / 7.0f, 0.8f, 0.8f));
-			if (ui::Button("glitch")) { mVDAnimation->controlValues[45] = !mVDAnimation->controlValues[45]; }
-			ui::PopStyleColor(3);
-			hue++;
-
-			(mVDAnimation->controlValues[46]) ? ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(hue / 7.0f, 1.0f, 0.5f)) : ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(1.0f, 0.1f, 0.1f));
-			ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(hue / 7.0f, 0.7f, 0.7f));
-			ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(hue / 7.0f, 0.8f, 0.8f));
-			if (ui::Button("toggle")) { mVDAnimation->controlValues[46] = !mVDAnimation->controlValues[46]; }
-			ui::PopStyleColor(3);
-			hue++;
-			ui::SameLine();
-
-			(mVDAnimation->controlValues[47]) ? ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(hue / 7.0f, 1.0f, 0.5f)) : ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(1.0f, 0.1f, 0.1f));
-			ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(hue / 7.0f, 0.7f, 0.7f));
-			ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(hue / 7.0f, 0.8f, 0.8f));
-			if (ui::Button("vignette")) { mVDAnimation->controlValues[47] = !mVDAnimation->controlValues[47]; }
-			ui::PopStyleColor(3);
-			hue++;
-
-			(mVDAnimation->controlValues[48]) ? ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(hue / 7.0f, 1.0f, 0.5f)) : ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(1.0f, 0.1f, 0.1f));
-			ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(hue / 7.0f, 0.7f, 0.7f));
-			ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(hue / 7.0f, 0.8f, 0.8f));
-			if (ui::Button("invert")) { mVDAnimation->controlValues[48] = !mVDAnimation->controlValues[48]; }
-			ui::PopStyleColor(3);
-			hue++;
-			ui::SameLine();
-
-			(mVDSettings->iGreyScale) ? ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(hue / 7.0f, 1.0f, 0.5f)) : ui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(1.0f, 0.1f, 0.1f));
-			ui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(hue / 7.0f, 0.7f, 0.7f));
-			ui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(hue / 7.0f, 0.8f, 0.8f));
-			mVDSettings->iGreyScale ^= ui::Button("greyscale");
-			ui::PopStyleColor(3);
-			hue++;
-
-			if (ui::Button("blackout"))
-			{
-				mVDAnimation->controlValues[1] = mVDAnimation->controlValues[2] = mVDAnimation->controlValues[3] = mVDAnimation->controlValues[4] = 0.0;
-				mVDAnimation->controlValues[5] = mVDAnimation->controlValues[6] = mVDAnimation->controlValues[7] = mVDAnimation->controlValues[8] = 0.0;
-			}
-		}
-		ui::End();
-
-
-#pragma endregion effects
-		break;
-	case 5:
-		// Color
-#pragma region Color
-
-
-#pragma endregion Color
-		break;
-	case 6:
-
-		break;
-	}
-
-#pragma region Global
-	showVDUI(4);	
-
-#pragma endregion Global
-
-	
-	showVDUI(currentWindowRow2);
 
 #pragma region library
 		/*mVDSettings->mRenderThumbs = true;
@@ -937,12 +738,6 @@ void VideodrommControllerApp::drawControlWindow()
 		*/
 #pragma endregion library
 
-	
-	switch (currentWindowRow3) {
-	case 3:
-		// Blendmodes
-		break;
-	}
 
 	/*
 	#pragma region warps
@@ -981,11 +776,10 @@ void VideodrommControllerApp::drawControlWindow()
 void VideodrommControllerApp::updateWindowTitle()
 {
 	getWindow()->setTitle("(" + mVDSettings->sFps + " fps) " + toString(mVDSettings->iBeat) + " Videodromm");
-
 }
 // UI
-void VideodrommControllerApp::showVDUI(unsigned int window) {
-	mVDUI->Run("UI", window);
+void VideodrommControllerApp::showVDUI(unsigned int fps) {
+	mVDUI->Run("UI", fps);
 }
 // If you're deploying to iOS, set the Render antialiasing to 0 for a significant
 // performance improvement. This value defaults to 4 (AA_MSAA_4) on iOS and 16 (AA_MSAA_16)

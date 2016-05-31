@@ -142,7 +142,8 @@ void VideodrommControllerApp::setup()
 	{
 		hideCursor();
 	}
-
+	disableFrameRate();
+	gl::enableVerticalSync(false);
 }
 void VideodrommControllerApp::cleanup()
 {

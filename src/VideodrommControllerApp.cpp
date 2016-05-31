@@ -438,7 +438,7 @@ void VideodrommControllerApp::drawControlWindow()
 		style.FramePadding = ImVec2(2, 2);
 		style.ItemSpacing = ImVec2(3, 3);
 		style.ItemInnerSpacing = ImVec2(3, 3);
-		style.WindowMinSize = ImVec2(mVDSettings->uiElementWidth, mVDSettings->mPreviewFboHeight);
+		style.WindowMinSize = ImVec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight);
 		// new style
 		style.Alpha = 1.0;
 		style.WindowFillAlphaDefault = 0.83;

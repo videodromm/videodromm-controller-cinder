@@ -133,8 +133,6 @@ void VideodrommControllerApp::setup()
 	//Warp::setSize(mWarps, mImage->getSize());
 	mSaveThumbTimer = 0.0f;
 
-	// imgui
-	mouseGlobal = false;
 	// mouse cursor
 	if (mVDSettings->mCursorVisible)
 	{
@@ -567,33 +565,7 @@ void VideodrommControllerApp::drawControlWindow()
 
 #pragma endregion channels
 		
-		// Mouse
-#pragma region mouse
-		ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargeW, mVDSettings->uiLargePreviewH), ImGuiSetCond_Once);
-		ui::SetNextWindowPos(ImVec2(mVDSettings->uiXPosCol1, mVDSettings->uiMargin), ImGuiSetCond_Once);
 
-		ui::Begin("Mouse");
-		{
-			ui::Text("Position: %.1f,%.1f", ui::GetIO().MousePos.x, ui::GetIO().MousePos.y);
-			ui::Text("Clic %d", ui::GetIO().MouseDown[0]);
-			mouseGlobal ^= ui::Button("mouse gbl");
-			if (mouseGlobal)
-			{
-				mVDSettings->mRenderPosXY.x = ui::GetIO().MousePos.x; ui::SameLine();
-				mVDSettings->mRenderPosXY.y = ui::GetIO().MousePos.y;
-				mVDSettings->iMouse.z = ui::GetIO().MouseDown[0];
-			}
-			else
-			{
-				mVDSettings->iMouse.z = ui::Button("mouse click");
-			}
-			ui::SliderFloat("MouseX", &mVDSettings->mRenderPosXY.x, 0, mVDSettings->mFboWidth);
-			ui::SliderFloat("MouseY", &mVDSettings->mRenderPosXY.y, 0, mVDSettings->mFboHeight);
-		}
-		ui::End();
-
-
-#pragma endregion mouse
 		
 
 

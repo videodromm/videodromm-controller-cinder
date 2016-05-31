@@ -86,7 +86,6 @@ private:
 	float						f = 0.0f;
 	char						buf[64];
 
-	bool						mouseGlobal;
 	// movie
 	bool						mMovieDelay;
 

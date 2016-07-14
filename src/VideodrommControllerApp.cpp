@@ -86,7 +86,7 @@ void VideodrommControllerApp::setup()
 	else {
 
 		// OK mControlWindow = createWindow(Window::Format().size(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight));
-		mControlWindow = createWindow(Window::Format().size(1280, 700));
+		mControlWindow = createWindow(Window::Format().size(1280, 800));
 		mControlWindow->setPos(mVDSettings->mMainWindowX, mVDSettings->mMainWindowY);
 		mControlWindow->setBorderless();
 		mControlWindow->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawControlWindow, this));
@@ -300,51 +300,14 @@ void VideodrommControllerApp::update()
 }
 void VideodrommControllerApp::fileDrop(FileDropEvent event)
 {
-	int index = (int)(event.getX() / (mVDSettings->uiMargin + mVDSettings->uiElementWidth));
-	string ext = "";
-	// use the last of the dropped files
+	int index = (int)(event.getX() / (mVDSettings->uiElementWidth + mVDSettings->uiMargin));// +1;
 	boost::filesystem::path mPath = event.getFile(event.getNumFiles() - 1);
 	string mFile = mPath.string();
-	int dotIndex = mFile.find_last_of(".");
-	int slashIndex = mFile.find_last_of("\\");
-
-	if (dotIndex != std::string::npos && dotIndex > slashIndex) ext = mFile.substr(mFile.find_last_of(".") + 1);
-
-	if (ext == "wav" || ext == "mp3")
-	{
+	if (mMixes[0]->loadFileFromAbsolutePath(mFile, index) > -1) {
+		// load success
+		// reset zoom
+		mVDAnimation->controlValues[22] = 1.0f;
 	}
-	else if (ext == "png" || ext == "jpg")
-	{
-		if (index < 1) index = 1;
-		if (index > 3) index = 3;
-		mMixes[0]->loadImageFile(mFile, index, true);
-	}
-	else if (ext == "glsl")
-	{
-		if (index > mMixes[0]->getFboCount() - 1) index = mMixes[0]->getFboCount() - 1;
-		int rtn = mMixes[0]->loadFboFragmentShader(mFile, index);
-		if (rtn > -1) {
-			// load success
-			// reset zoom
-			mVDAnimation->controlValues[22] = 1.0f;
-		}
-	}
-	else if (ext == "xml")
-	{
-	}
-	else if (ext == "mov")
-	{
-		//mVDTextures->loadMovie(index, mFile);
-	}
-	else if (ext == "txt")
-	{
-	}
-	else if (ext == "")
-	{
-		// try loading image sequence from dir
-		//mVDTextures->loadImageSequence(index, mFile);
-	}
-
 }
 
 // Render the scene into the FBO

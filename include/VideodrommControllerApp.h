@@ -90,17 +90,11 @@ private:
 	bool						mMovieDelay;
 
 	// warping
-	gl::TextureRef				mImage;
 	WarpList					mWarps;
 	string						fileWarpsName;
 	//Area						mSrcArea;
 	fs::path					mWarpSettings;
 	unsigned int				mWarpFboIndex;
-	// fbo
-	//void						renderSceneToFbo();
-	//gl::FboRef					mRenderFbo;
-	//void						renderUIToFbo();
-	//gl::FboRef					mUIFbo;
 	bool						mFadeInDelay;
 	// timeline
 	Anim<float>					mSaveThumbTimer;

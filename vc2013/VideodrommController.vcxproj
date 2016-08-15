@@ -1,3 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -63,7 +64,7 @@
       <AdditionalIncludeDirectories>"..\..\..\Cinder\include";..\include</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>cinder-$(PlatformToolset)_d.lib;OpenGL32.lib;%(AdditionalDependencies);winmm.lib;..\..\..\Cinder\blocks\Cinder-Spout\lib\Spout2.lib;..\..\..\Cinder\blocks\QuickTime\lib\msw\x86\CVClient.lib;..\..\..\Cinder\blocks\QuickTime\lib\msw\x86\QTMLClient.lib</AdditionalDependencies>
+      <AdditionalDependencies>cinder-$(PlatformToolset)_d.lib;OpenGL32.lib;%(AdditionalDependencies);winmm.lib;..\..\..\Cinder\blocks\Cinder-Spout\lib\Spout.lib;..\..\..\Cinder\blocks\QuickTime\lib\msw\x86\CVClient.lib;..\..\..\Cinder\blocks\QuickTime\lib\msw\x86\QTMLClient.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>"..\..\..\Cinder\lib\msw\$(PlatformTarget)";..\..\..\Cinder\blocks\Cinder-Videodromm\lib;..\..\..\Cinder\blocks\Cinder-WebSocketPP\lib\msw</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -73,7 +74,7 @@
       <IgnoreSpecificDefaultLibraries>LIBCMT;LIBCPMT</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y "..\..\..\Cinder\blocks\Cinder-Spout\lib\Spout2.dll" "$(OutDir)"
+      <Command>xcopy /y "..\..\..\Cinder\blocks\Cinder-Spout\lib\Spout.dll" "$(OutDir)"
 xcopy /y "..\..\..\Cinder\blocks\Cinder-Spout\lib\SpoutPanel.exe" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -94,7 +95,7 @@
       <AdditionalIncludeDirectories>"..\..\..\Cinder\include";..\include</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>cinder-$(PlatformToolset).lib;OpenGL32.lib;%(AdditionalDependencies);winmm.lib;..\..\..\Cinder\blocks\Cinder-Spout\lib\Spout2.lib;..\..\..\Cinder\blocks\QuickTime\lib\msw\x86\CVClient.lib;..\..\..\Cinder\blocks\QuickTime\lib\msw\x86\QTMLClient.lib</AdditionalDependencies>
+      <AdditionalDependencies>cinder-$(PlatformToolset).lib;OpenGL32.lib;%(AdditionalDependencies);winmm.lib;..\..\..\Cinder\blocks\Cinder-Spout\lib\Spout.lib;..\..\..\Cinder\blocks\QuickTime\lib\msw\x86\CVClient.lib;..\..\..\Cinder\blocks\QuickTime\lib\msw\x86\QTMLClient.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>"..\..\..\Cinder\lib\msw\$(PlatformTarget)";..\..\..\Cinder\blocks\Cinder-Videodromm\lib;..\..\..\Cinder\blocks\Cinder-WebSocketPP\lib\msw</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <GenerateMapFile>true</GenerateMapFile>
@@ -106,7 +107,7 @@
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y "..\..\..\Cinder\blocks\Cinder-Spout\lib\Spout2.dll" "$(OutDir)"
+      <Command>xcopy /y "..\..\..\Cinder\blocks\Cinder-Spout\lib\Spout.dll" "$(OutDir)"
 xcopy /y "..\..\..\Cinder\blocks\Cinder-Spout\lib\SpoutPanel.exe" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

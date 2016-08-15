@@ -36,13 +36,14 @@ void VideodrommControllerApp::prepare(Settings *settings)
 }
 void VideodrommControllerApp::setup()
 {
+
 	// Log
 	mVDLog = VDLog::create();
 	CI_LOG_V("Controller");
 	// Settings
 	mVDSettings = VDSettings::create();
 	mVDSettings->mLiveCode = false;
-	mVDSettings->mRenderThumbs = false;
+	//mVDSettings->mRenderThumbs = false;
 	// Session
 	mVDSession = VDSession::create(mVDSettings);
 	// Utils
@@ -67,8 +68,7 @@ void VideodrommControllerApp::setup()
 	}
 
 	setFrameRate(mVDSession->getTargetFps());
-	mMovieDelay = mFadeInDelay = true;
-	mIsResizing = true;
+	mMovieDelay = mFadeInDelay = mIsResizing = true;
 	mVDAnimation->tapTempo();
 	mVDUtils->getWindowsResolution();
 	// UI
@@ -77,28 +77,25 @@ void VideodrommControllerApp::setup()
 	getWindow()->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
 	getWindow()->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawRenderWindow, this));
 	// render fbo
-	gl::Fbo::Format format;
-	//format.setSamples( 4 ); // uncomment this to enable 4x antialiasing
-	//mRenderFbo = gl::Fbo::create(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, format.colorTexture());
+	//gl::Fbo::Format format;
+
 	if (mVDSettings->mStandalone) {
 
 	}
 	else {
 
 		// OK mControlWindow = createWindow(Window::Format().size(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight));
-		mControlWindow = createWindow(Window::Format().size(1280, 800));
+		mControlWindow = createWindow(Window::Format().size(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight));
 		mControlWindow->setPos(mVDSettings->mMainWindowX, mVDSettings->mMainWindowY);
 		mControlWindow->setBorderless();
 		mControlWindow->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawControlWindow, this));
 		mControlWindow->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
 
-		// UI fbo
-		//mUIFbo = gl::Fbo::create(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight, format.colorTexture());
 	}
 
 	// warping
-	gl::enableDepthRead();
-	gl::enableDepthWrite();
+	//gl::enableDepthRead();
+	//gl::enableDepthWrite();
 	// fonts ?
 	//gl::enableAlphaBlending(false);
 	// initialize warps
@@ -112,25 +109,9 @@ void VideodrommControllerApp::setup()
 		mWarps.push_back(WarpPerspectiveBilinear::create());
 	}
 
-	//mSrcArea = Area(0, 0, 700, 500);
-	// TODO Warp::setSize(mWarps, mVDFbos[0]->getSize());
-	// load image
-	try {
-		mImage = gl::Texture::create(loadImage(loadAsset("help.jpg")),
-			gl::Texture2d::Format().loadTopDown().mipmap(true).minFilter(GL_LINEAR_MIPMAP_LINEAR));
-
-		//mSrcArea = mImage->getBounds();
-
-		// adjust the content size of the warps
-		//Warp::setSize(mWarps, mImage->getSize());
-	}
-	catch (const std::exception &e) {
-		console() << e.what() << std::endl;
-	}
-	//Warp::setSize(mWarps, ivec2(mVDSettings->mFboWidth, mVDSettings->mFboHeight));
 	Warp::setSize(mWarps, ivec2(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight));
-	mWarpFboIndex = 1;
-	//Warp::setSize(mWarps, mImage->getSize());
+	mWarpFboIndex = 0;
+
 	mSaveThumbTimer = 0.0f;
 
 	// mouse cursor
@@ -142,6 +123,7 @@ void VideodrommControllerApp::setup()
 	{
 		hideCursor();
 	}
+	// maximize fps
 	disableFrameRate();
 	gl::enableVerticalSync(false);
 }
@@ -287,16 +269,14 @@ void VideodrommControllerApp::update()
 {
 	mVDSettings->iFps = getAverageFps();
 	mVDSettings->sFps = toString(floor(mVDSettings->iFps));
+	mMixes[0]->update();
 	mVDAnimation->update();
-
 	mVDRouter->update();
 	// check if a shader has been received from websockets
 	if (mVDSettings->mShaderToLoad != "") {
 		mMixes[0]->loadFboFragmentShader(mVDSettings->mShaderToLoad, 1);
 	}
 	updateWindowTitle();
-
-	//renderSceneToFbo();
 }
 void VideodrommControllerApp::fileDrop(FileDropEvent event)
 {
@@ -310,30 +290,6 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 	}
 }
 
-// Render the scene into the FBO
-/*void VideodrommControllerApp::renderSceneToFbo()
-{
-	// this will restore the old framebuffer binding when we leave this function
-	// on non-OpenGL ES platforms, you can just call mFbo->unbindFramebuffer() at the end of the function
-	// but this will restore the "screen" FBO on OpenGL ES, and does the right thing on both platforms
-	gl::ScopedFramebuffer fbScp(mRenderFbo);
-	gl::clear(Color::black());
-	// setup the viewport to match the dimensions of the FBO
-	gl::ScopedViewport scpVp(ivec2(0), mRenderFbo->getSize());
-	
-	gl::draw(mVDTextures->getFboTexture(2), Rectf(0, mVDSettings->mRenderHeight, mVDSettings->mRenderWidth, 0));
-
-	int i = 0;
-	// iterate over the warps and draw their content
-	for (auto &warp : mWarps) {
-		//warp->draw(mVDTextures->getFboTexture(i), mVDTextures->getFboTexture(i)->getBounds());
-		//warp->draw(mVDTextures->getFboTexture(i), Area(0, 0, mVDTextures->getFboTextureWidth(i), mVDTextures->getFboTextureHeight(i)));
-		warp->draw(mVDTextures->getFboTexture(i), Area(0, 0, mVDTextures->getFboTextureWidth(i), mVDTextures->getFboTextureHeight(i)));
-
-		//warp->draw(mVDTextures->getFboTexture(i), Area(0, 0, 1280, 720));
-		i++;
-	}
-}*/
 void VideodrommControllerApp::drawRenderWindow()
 {
 	//renderSceneToFbo();
@@ -353,32 +309,17 @@ void VideodrommControllerApp::drawRenderWindow()
 		}
 		}*/
 	gl::clear(Color::black());
-	//gl::draw(mRenderFbo->getColorTexture());
-	//gl::draw(mVDTextures->getFboTexture(2), Rectf(0, mVDSettings->mRenderHeight, mVDSettings->mRenderWidth, 0));
+	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);
 
 	//int i = 0;
 	// iterate over the warps and draw their content
 	for (auto &warp : mWarps) {
-		warp->draw(mMixes[0]->getFboTexture(mWarpFboIndex), Area(0, 0, mMixes[0]->getFboTextureWidth(mWarpFboIndex), mMixes[0]->getFboTextureHeight(mWarpFboIndex)));
+		warp->draw(mMixes[0]->getTexture(mWarpFboIndex), Area(0, 0, mMixes[0]->getFboTextureWidth(mWarpFboIndex), mMixes[0]->getFboTextureHeight(mWarpFboIndex)));
 
 		//i++;
 	}
 }
-// Render the UI into the FBO
-//void VideodrommControllerApp::renderUIToFbo()
-//{
-	// this will restore the old framebuffer binding when we leave this function
-	// on non-OpenGL ES platforms, you can just call mFbo->unbindFramebuffer() at the end of the function
-	// but this will restore the "screen" FBO on OpenGL ES, and does the right thing on both platforms
-	//gl::ScopedFramebuffer fbScp(mUIFbo);
-	// setup the viewport to match the dimensions of the FBO
-	//gl::ScopedViewport scpVp(ivec2(0), ivec2(mVDSettings->mFboWidth * mVDSettings->mUIZoom, mVDSettings->mFboHeight * mVDSettings->mUIZoom));
 
-	//gl::draw(mUIFbo->getColorTexture());
-
-
-
-//}
 void VideodrommControllerApp::drawControlWindow()
 {
 	ImGuiStyle& style = ui::GetStyle();
@@ -443,34 +384,13 @@ void VideodrommControllerApp::drawControlWindow()
 #pragma endregion style
 	}
 
-	//renderUIToFbo();
 	gl::clear(Color::black());
-	//gl::draw(mUIFbo->getColorTexture());
-
 	//gl::color(Color::white());
-	gl::setMatricesWindow(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight, false);
+	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);
 	// imgui
 
 #pragma region menu
 	if (ImGui::BeginMainMenuBar()) {
-		if (ImGui::BeginMenu("File"))
-		{
-			if (ImGui::MenuItem("New")) {}
-			if (ImGui::MenuItem("Open", "Ctrl+O")) {}
-			if (ImGui::BeginMenu("Open Recent"))
-			{
-				ImGui::MenuItem("live.frag");
-				ImGui::EndMenu();
-			}
-			if (ImGui::MenuItem("Save", "Ctrl+S")) {
-				// save warp settings
-				Warp::writeSettings(mWarps, writeFile("warps1.xml"));
-				// save params
-				mVDSettings->save();
-			}
-			if (ImGui::MenuItem("Debug")) {}
-			ImGui::EndMenu();
-		}
 		if (ImGui::BeginMenu("Options"))
 		{
 			ImGui::DragFloat("Global Alpha", &style.Alpha, 0.005f, 0.20f, 1.0f, "%.2f");
@@ -479,10 +399,11 @@ void VideodrommControllerApp::drawControlWindow()
 		if (ImGui::MenuItem("Quit", "Alt+F4")) { cleanup(); }
 		ImGui::EndMainMenuBar();
 	}
+
 #pragma endregion menu
 
 	showVDUI((int)getAverageFps());
-
+	gl::draw(mMixes[0]->getTexture(), Rectf(10 + mVDSettings->uiLargeW, 170, 650 + mVDSettings->uiLargeW, 650));
 #pragma region library
 		/*mVDSettings->mRenderThumbs = true;
 
@@ -667,11 +588,5 @@ void VideodrommControllerApp::updateWindowTitle()
 void VideodrommControllerApp::showVDUI(unsigned int fps) {
 	mVDUI->Run("UI", fps);
 }
-// If you're deploying to iOS, set the Render antialiasing to 0 for a significant
-// performance improvement. This value defaults to 4 (AA_MSAA_4) on iOS and 16 (AA_MSAA_16)
-// on the Desktop.
-#if defined( CINDER_COCOA_TOUCH )
-CINDER_APP(VideodrommControllerApp, RendererGl(RendererGl::AA_NONE))
-#else
-CINDER_APP(VideodrommControllerApp, RendererGl(RendererGl::Options().msaa(8)), &VideodrommControllerApp::prepare)
-#endif
+
+CINDER_APP(VideodrommControllerApp, RendererGl, &VideodrommControllerApp::prepare)

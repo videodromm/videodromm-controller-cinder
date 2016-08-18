@@ -163,6 +163,7 @@
     <ClInclude Include="..\..\..\Cinder\blocks\Cinder-WebSocketPP\src\WebSocketConnection.h" />
     <ClInclude Include="..\..\..\Cinder\blocks\Cinder-WebSocketPP\src\WebSocketServer.h" />
     <ClInclude Include="..\..\..\Cinder\blocks\OSC\src\Osc.h" />
+    <ClInclude Include="..\include\VideodrommControllerApp.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\VideodrommControllerApp.cpp" />

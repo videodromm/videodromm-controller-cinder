@@ -230,7 +230,7 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 				//mLoopVideo = !mLoopVideo;
 				//if (mMovie) mMovie->setLoop(mLoopVideo);
 				break;
-			case KeyEvent::KEY_c:
+			case KeyEvent::KEY_h:
 				// mouse cursor
 				mVDSettings->mCursorVisible = !mVDSettings->mCursorVisible;
 				if (mVDSettings->mCursorVisible) {

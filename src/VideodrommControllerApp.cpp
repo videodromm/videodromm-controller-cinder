@@ -90,7 +90,6 @@ void VideodrommControllerApp::setup()
 		mControlWindow->setBorderless();
 		mControlWindow->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawControlWindow, this));
 		mControlWindow->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
-
 	}
 
 	// warping
@@ -109,20 +108,14 @@ void VideodrommControllerApp::setup()
 		mWarps.push_back(WarpPerspectiveBilinear::create());
 	}
 
-	Warp::setSize(mWarps, ivec2(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight));
+	//Warp::setSize(mWarps, ivec2(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight));
+	Warp::setSize(mWarps, ivec2(mVDSettings->mFboWidth, mVDSettings->mFboHeight));
 	mWarpFboIndex = 0;
 
 	mSaveThumbTimer = 0.0f;
 
-	// mouse cursor
-	if (mVDSettings->mCursorVisible)
-	{
-		showCursor();
-	}
-	else
-	{
-		hideCursor();
-	}
+	// mouse cursor and ui
+	setUIVisibility(mVDSettings->mCursorVisible);
 	// maximize fps
 	disableFrameRate();
 	gl::enableVerticalSync(false);
@@ -233,12 +226,8 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 			case KeyEvent::KEY_h:
 				// mouse cursor
 				mVDSettings->mCursorVisible = !mVDSettings->mCursorVisible;
-				if (mVDSettings->mCursorVisible) {
-					hideCursor();
-				}
-				else {
-					showCursor();
-				}
+				setUIVisibility(mVDSettings->mCursorVisible);
+
 				break;
 			case KeyEvent::KEY_n:
 				mWarps.push_back(WarpPerspectiveBilinear::create());
@@ -253,7 +242,17 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 		}
 	}
 }
-
+void VideodrommControllerApp::setUIVisibility(bool visible)
+{
+	if (visible)
+	{
+		showCursor();
+	}
+	else
+	{
+		hideCursor();
+	}
+}
 void VideodrommControllerApp::keyUp(KeyEvent event)
 {
 	// pass this key event to the warp editor first
@@ -311,12 +310,9 @@ void VideodrommControllerApp::drawRenderWindow()
 	gl::clear(Color::black());
 	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);
 
-	//int i = 0;
 	// iterate over the warps and draw their content
 	for (auto &warp : mWarps) {
 		warp->draw(mMixes[0]->getTexture(mWarpFboIndex), Area(0, 0, mMixes[0]->getFboTextureWidth(mWarpFboIndex), mMixes[0]->getFboTextureHeight(mWarpFboIndex)));
-
-		//i++;
 	}
 }
 
@@ -386,7 +382,7 @@ void VideodrommControllerApp::drawControlWindow()
 
 	gl::clear(Color::black());
 	//gl::color(Color::white());
-	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);
+	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, true);
 	// imgui
 
 #pragma region menu
@@ -409,9 +405,9 @@ void VideodrommControllerApp::drawControlWindow()
 	int t = 0;
 	int fboIndex = mMixes[0]->getLeftFboIndex();
 
-	ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargePreviewW, mVDSettings->uiLargePreviewH));
+	ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargePreviewW, mVDSettings->uiPreviewH));
 	ui::SetNextWindowPos(ImVec2((t * (mVDSettings->uiLargePreviewW + mVDSettings->uiMargin)) + mVDSettings->uiMargin + mVDSettings->uiLargeW, mVDSettings->uiYPosRow2));
-	ui::Begin("Left", NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+	ui::Begin("it a", NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 	{
 		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
 		ui::Image((void*)mMixes[0]->getInputTexture(mMixes[0]->getFboInputTextureIndex(fboIndex))->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
@@ -419,7 +415,7 @@ void VideodrommControllerApp::drawControlWindow()
 	}
 	ui::End();
 	t++;
-	ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargePreviewW, mVDSettings->uiLargePreviewH));
+	ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargePreviewW, mVDSettings->uiPreviewH));
 	ui::SetNextWindowPos(ImVec2((t * (mVDSettings->uiLargePreviewW + mVDSettings->uiMargin)) + mVDSettings->uiMargin + mVDSettings->uiLargeW, mVDSettings->uiYPosRow2));
 	ui::Begin(mMixes[0]->getFboLabel(fboIndex).c_str(), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 	{
@@ -428,13 +424,25 @@ void VideodrommControllerApp::drawControlWindow()
 		ui::PopItemWidth();
 	}
 	ui::End();
+	t++;
+	ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargePreviewW, mVDSettings->uiPreviewH));
+	ui::SetNextWindowPos(ImVec2((t * (mVDSettings->uiLargePreviewW + mVDSettings->uiMargin)) + mVDSettings->uiMargin + mVDSettings->uiLargeW, mVDSettings->uiYPosRow2));
+	ui::Begin("f a", NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+	{
+		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
+		ui::Image((void*)mMixes[0]->getTexture(1)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
+		ui::PopItemWidth();
+	}
+	ui::End();
+
+
 	//right
 	t = 0;
 	fboIndex = mMixes[0]->getRightFboIndex();
 
-	ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargePreviewW, mVDSettings->uiLargePreviewH));
-	ui::SetNextWindowPos(ImVec2((t * (mVDSettings->uiLargePreviewW + mVDSettings->uiMargin)) + mVDSettings->uiMargin + mVDSettings->uiLargeW, mVDSettings->uiYPosRow2 + mVDSettings->uiLargePreviewH + mVDSettings->uiMargin));
-	ui::Begin("Right", NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+	ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargePreviewW, mVDSettings->uiPreviewH));
+	ui::SetNextWindowPos(ImVec2((t * (mVDSettings->uiLargePreviewW + mVDSettings->uiMargin)) + mVDSettings->uiMargin + mVDSettings->uiLargeW, mVDSettings->uiYPosRow2 + mVDSettings->uiPreviewH + mVDSettings->uiMargin));
+	ui::Begin("it b", NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 	{
 		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
 		ui::Image((void*)mMixes[0]->getInputTexture(mMixes[0]->getFboInputTextureIndex(fboIndex))->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
@@ -442,8 +450,8 @@ void VideodrommControllerApp::drawControlWindow()
 	}
 	ui::End();
 	t++;
-	ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargePreviewW, mVDSettings->uiLargePreviewH));
-	ui::SetNextWindowPos(ImVec2((t * (mVDSettings->uiLargePreviewW + mVDSettings->uiMargin)) + mVDSettings->uiMargin + mVDSettings->uiLargeW, mVDSettings->uiYPosRow2 + mVDSettings->uiLargePreviewH + mVDSettings->uiMargin));
+	ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargePreviewW, mVDSettings->uiPreviewH));
+	ui::SetNextWindowPos(ImVec2((t * (mVDSettings->uiLargePreviewW + mVDSettings->uiMargin)) + mVDSettings->uiMargin + mVDSettings->uiLargeW, mVDSettings->uiYPosRow2 + mVDSettings->uiPreviewH + mVDSettings->uiMargin));
 	ui::Begin(mMixes[0]->getFboLabel(fboIndex).c_str(), NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 	{
 		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
@@ -451,8 +459,16 @@ void VideodrommControllerApp::drawControlWindow()
 		ui::PopItemWidth();
 	}
 	ui::End();
-
-
+	t++;
+	ui::SetNextWindowSize(ImVec2(mVDSettings->uiLargePreviewW, mVDSettings->uiPreviewH));
+	ui::SetNextWindowPos(ImVec2((t * (mVDSettings->uiLargePreviewW + mVDSettings->uiMargin)) + mVDSettings->uiMargin + mVDSettings->uiLargeW, mVDSettings->uiYPosRow2 + mVDSettings->uiPreviewH + mVDSettings->uiMargin));
+	ui::Begin("f b", NULL, ImVec2(0, 0), ui::GetStyle().Alpha, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+	{
+		ui::PushItemWidth(mVDSettings->mPreviewFboWidth);
+		ui::Image((void*)mMixes[0]->getTexture(2)->getId(), ivec2(mVDSettings->mPreviewFboWidth, mVDSettings->mPreviewFboHeight));
+		ui::PopItemWidth();
+	}
+	ui::End();
 #pragma endregion chain
 #pragma region library
 		/*mVDSettings->mRenderThumbs = true;

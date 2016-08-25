@@ -73,7 +73,7 @@
     <Filter Include="Blocks\Cinder-WebSocketPP\src">
       <UniqueIdentifier>{5BC19131-9243-42E6-93BA-70C48A6E9FD8}</UniqueIdentifier>
     </Filter>
-        <Filter Include="Blocks\OSC">
+    <Filter Include="Blocks\OSC">
       <UniqueIdentifier>{37F54B2C-350A-473A-BC21-DEFD356C03FE}</UniqueIdentifier>
     </Filter>
     <Filter Include="Blocks\OSC\src">
@@ -84,6 +84,9 @@
     </Filter>
     <Filter Include="Blocks\OSC\src\cinder\osc">
       <UniqueIdentifier>{1CA0AA3A-C372-40FE-ACA9-B57759ECC5F6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="debug">
+      <UniqueIdentifier>{3dd66ce6-bae7-4bd4-ac85-a4102b8e802b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -376,5 +379,10 @@
     <ResourceCompile Include="Resources.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="Debug\VDSettings.xml">
+      <Filter>debug</Filter>
+    </Xml>
   </ItemGroup>
 </Project>

@@ -77,7 +77,6 @@ private:
 
 	// window mgmt
 	WindowRef					mControlWindow;
-	bool						mIsResizing;
 	// imgui
 
 	int							playheadPositions[12];

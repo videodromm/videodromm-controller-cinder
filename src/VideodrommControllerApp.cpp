@@ -322,7 +322,6 @@ void VideodrommControllerApp::drawControlWindow()
 	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, true);
 	gl::draw(mMixes[0]->getTexture(), Rectf(10 + mVDSettings->uiLargeW, 170, 650 + mVDSettings->uiLargeW, 650));
 	// imgui
-	showVDUI((int)getAverageFps());
 	if (mVDUI->isReady()) {
 
 #pragma region chain
@@ -395,6 +394,7 @@ void VideodrommControllerApp::drawControlWindow()
 		}
 		ui::End();
 #pragma endregion chain
+
 #pragma region library
 		/*mVDSettings->mRenderThumbs = true;
 
@@ -570,15 +570,12 @@ void VideodrommControllerApp::drawControlWindow()
 		*/
 #pragma endregion warps
 	}
+	mVDUI->Run("UI", (int)getAverageFps());
 }
 
 void VideodrommControllerApp::updateWindowTitle()
 {
 	getWindow()->setTitle("(" + mVDSettings->sFps + " fps) " + toString(mVDSettings->iBeat) + " Videodromm");
-}
-// UI
-void VideodrommControllerApp::showVDUI(unsigned int fps) {
-	mVDUI->Run("UI", fps);
 }
 
 CINDER_APP(VideodrommControllerApp, RendererGl, &VideodrommControllerApp::prepare)

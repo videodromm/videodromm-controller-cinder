@@ -179,64 +179,76 @@ void VideodrommControllerApp::mouseUp(MouseEvent event)
 
 void VideodrommControllerApp::keyDown(KeyEvent event)
 {
-	//fs::path moviePath;
+#if defined( CINDER_COCOA )
+	bool isModDown = event.isMetaDown();
+#else // windows
+	bool isModDown = event.isControlDown();
+#endif
 
-	// pass this key event to the warp editor first
-	if (!Warp::handleKeyDown(mWarps, event)) {
-		// warp editor did not handle the key, so handle it here
-		if (!mVDAnimation->handleKeyDown(event)) {
-			// Animation did not handle the key, so handle it here
+	if (isModDown) {
+		switch (event.getCode()) {
+		case KeyEvent::KEY_s:
+			fileWarpsName = "warps" + toString(getElapsedFrames()) + ".xml";
+			mWarpSettings = getAssetPath("") / mVDSettings->mAssetsPath / fileWarpsName;
+			Warp::writeSettings(mWarps, writeFile(mWarpSettings));
+			mWarpSettings = getAssetPath("") / mVDSettings->mAssetsPath / "warps.xml";
+			break;
+		}
+	}
+	else {
+		//fs::path moviePath;
 
-			switch (event.getCode()) {
-			case KeyEvent::KEY_ESCAPE:
-				// quit the application
-				quit();
-				break;
-			case KeyEvent::KEY_w:
-				// toggle warp edit mode
-				Warp::enableEditMode(!Warp::isEditModeEnabled());
-				break;
-			case KeyEvent::KEY_LEFT:
-				//mVDTextures->rewindMovie();				
-				break;
-			case KeyEvent::KEY_RIGHT:
-				//mVDTextures->fastforwardMovie();				
-				break;
-			case KeyEvent::KEY_SPACE:
-				//mVDTextures->playMovie();
-				//mVDAnimation->currentScene++;
-				//if (mMovie) { if (mMovie->isPlaying()) mMovie->stop(); else mMovie->play(); }
-				break;
-			case KeyEvent::KEY_0:
-				mWarpFboIndex = 0;
-				break;
-			case KeyEvent::KEY_1:
-				mWarpFboIndex = 1;
-				break;
-			case KeyEvent::KEY_2:
-				mWarpFboIndex = 2;
-				break;
-			case KeyEvent::KEY_l:
-				mVDAnimation->load();
-				//mLoopVideo = !mLoopVideo;
-				//if (mMovie) mMovie->setLoop(mLoopVideo);
-				break;
-			case KeyEvent::KEY_h:
-				// mouse cursor
-				mVDSettings->mCursorVisible = !mVDSettings->mCursorVisible;
-				setUIVisibility(mVDSettings->mCursorVisible);
+		// pass this key event to the warp editor first
+		if (!Warp::handleKeyDown(mWarps, event)) {
+			// warp editor did not handle the key, so handle it here
+			if (!mVDAnimation->handleKeyDown(event)) {
+				// Animation did not handle the key, so handle it here
 
-				break;
-			case KeyEvent::KEY_n:
-				mWarps.push_back(WarpPerspectiveBilinear::create());
-				Warp::handleResize(mWarps);
-				break;
-			case KeyEvent::KEY_a:
-				fileWarpsName = "warps" + toString(getElapsedFrames()) + ".xml";
-				mWarpSettings = getAssetPath("") / mVDSettings->mAssetsPath / fileWarpsName;
-				Warp::writeSettings(mWarps, writeFile(mWarpSettings));
-				mWarpSettings = getAssetPath("") / mVDSettings->mAssetsPath / "warps.xml";
-				break;
+				switch (event.getCode()) {
+				case KeyEvent::KEY_ESCAPE:
+					// quit the application
+					quit();
+					break;
+				case KeyEvent::KEY_w:
+					// toggle warp edit mode
+					Warp::enableEditMode(!Warp::isEditModeEnabled());
+					break;
+				case KeyEvent::KEY_LEFT:
+					//mVDTextures->rewindMovie();				
+					break;
+				case KeyEvent::KEY_RIGHT:
+					//mVDTextures->fastforwardMovie();				
+					break;
+				case KeyEvent::KEY_SPACE:
+					//mVDTextures->playMovie();
+					//mVDAnimation->currentScene++;
+					//if (mMovie) { if (mMovie->isPlaying()) mMovie->stop(); else mMovie->play(); }
+					break;
+				case KeyEvent::KEY_0:
+					mWarpFboIndex = 0;
+					break;
+				case KeyEvent::KEY_1:
+					mWarpFboIndex = 1;
+					break;
+				case KeyEvent::KEY_2:
+					mWarpFboIndex = 2;
+					break;
+				case KeyEvent::KEY_l:
+					mVDAnimation->load();
+					//mLoopVideo = !mLoopVideo;
+					//if (mMovie) mMovie->setLoop(mLoopVideo);
+					break;
+				case KeyEvent::KEY_h:
+					// mouse cursor
+					mVDSettings->mCursorVisible = !mVDSettings->mCursorVisible;
+					setUIVisibility(mVDSettings->mCursorVisible);
+
+					break;
+				case KeyEvent::KEY_n:
+					mWarps.push_back(WarpPerspectiveBilinear::create());
+					Warp::handleResize(mWarps);
+					break;
+				}
 			}
 		}
 	}

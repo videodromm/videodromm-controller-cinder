@@ -229,6 +229,7 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 				break;
 			case KeyEvent::KEY_n:
 				mWarps.push_back(WarpPerspectiveBilinear::create());
+				Warp::handleResize(mWarps);
 				break;
 			case KeyEvent::KEY_a:
 				fileWarpsName = "warps" + toString(getElapsedFrames()) + ".xml";

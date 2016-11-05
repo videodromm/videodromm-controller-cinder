@@ -52,9 +52,6 @@ void VideodrommControllerApp::setup()
 	mVDAnimation = VDAnimation::create(mVDSettings, mVDSession);
 	// Message router
 	mVDRouter = VDRouter::create(mVDSettings, mVDAnimation, mVDSession);
-	// Image sequence
-	CI_LOG_V("Assets folder: " + mVDUtils->getPath("").string());
-	string imgSeqPath = mVDSession->getImageSequencePath();
 
 	// Mix
 	mMixesFilepath = getAssetPath("") / "mixes.xml";
@@ -85,7 +82,7 @@ void VideodrommControllerApp::setup()
 		// OK mControlWindow = createWindow(Window::Format().size(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight));
 		mControlWindow = createWindow(Window::Format().size(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight));
 		mControlWindow->setPos(mVDSettings->mMainWindowX, mVDSettings->mMainWindowY);
-		mControlWindow->setBorderless();
+		//mControlWindow->setBorderless();
 		mControlWindow->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawControlWindow, this));
 		mControlWindow->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
 	}
@@ -291,11 +288,10 @@ void VideodrommControllerApp::update()
 void VideodrommControllerApp::fileDrop(FileDropEvent event)
 {
 	int index = (int)(event.getX() / (mVDSettings->uiElementWidth + mVDSettings->uiMargin));// +1;
-	boost::filesystem::path mPath = event.getFile(event.getNumFiles() - 1);
+	ci::fs::path mPath = event.getFile(event.getNumFiles() - 1);
 	string mFile = mPath.string();
 	if (mMixes[0]->loadFileFromAbsolutePath(mFile, index) > -1) {
-		// load success
-		// reset zoom
+		// load success, reset zoom
 		mVDAnimation->controlValues[22] = 1.0f;
 	}
 }

@@ -319,7 +319,7 @@ void VideodrommControllerApp::drawRenderWindow()
 
 	// iterate over the warps and draw their content
 	for (auto &warp : mWarps) {
-		warp->draw(mMixes[0]->getTexture(mWarpFboIndex), Area(0, 0, mMixes[0]->getFboTextureWidth(mWarpFboIndex), mMixes[0]->getFboTextureHeight(mWarpFboIndex)));
+		warp->draw(mMixes[0]->getMixTexture(mWarpFboIndex), Area(0, 0, mMixes[0]->getFboTextureWidth(mWarpFboIndex), mMixes[0]->getFboTextureHeight(mWarpFboIndex)));
 	}
 }
 
@@ -329,7 +329,7 @@ void VideodrommControllerApp::drawControlWindow()
 	gl::clear(Color::black());
 	//gl::color(Color::white());
 	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, true);
-	gl::draw(mMixes[0]->getTexture(), Rectf(10 + mVDSettings->uiLargeW, 170, 650 + mVDSettings->uiLargeW, 650));
+	gl::draw(mMixes[0]->getMixTexture(), Rectf(10 + mVDSettings->uiLargeW, 170, 650 + mVDSettings->uiLargeW, 650));
 	// imgui
 	if (mVDUI->isReady()) {
 #pragma region library

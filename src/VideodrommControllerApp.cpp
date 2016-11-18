@@ -93,7 +93,7 @@ void VideodrommControllerApp::setup()
 	// fonts ?
 	//gl::enableAlphaBlending(false);
 	// initialize warps
-	mWarpSettings = getAssetPath("") / mVDSettings->mAssetsPath / "warps.xml";
+	/*mWarpSettings = getAssetPath("") / mVDSettings->mAssetsPath / "warps.xml";
 	if (fs::exists(mWarpSettings)) {
 		// load warp settings from file if one exists
 		mWarps = Warp::readSettings(loadFile(mWarpSettings));
@@ -105,7 +105,7 @@ void VideodrommControllerApp::setup()
 
 	//Warp::setSize(mWarps, ivec2(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight));
 	Warp::setSize(mWarps, ivec2(mVDSettings->mFboWidth, mVDSettings->mFboHeight));
-	mWarpFboIndex = 0;
+	mWarpFboIndex = 0;*/
 
 	mSaveThumbTimer = 0.0f;
 
@@ -118,8 +118,7 @@ void VideodrommControllerApp::setup()
 void VideodrommControllerApp::cleanup()
 {
 	CI_LOG_V("shutdown");
-	// save warp settings
-	Warp::writeSettings(mWarps, writeFile(mWarpSettings));
+	mMixes[0]->save();
 	mVDSettings->save();
 	mVDSession->save();
 	ui::Shutdown();
@@ -136,118 +135,57 @@ void VideodrommControllerApp::resizeWindow()
 	else {
 		ui::disconnectWindow(mControlWindow);
 	}
-	//Warp::setSize(mWarps, ivec2(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight));
-	// tell the warps our window has been resized, so they properly scale up or down
-	Warp::handleResize(mWarps);
+	mMixes[0]->resize();
 
 }
 
 void VideodrommControllerApp::mouseMove(MouseEvent event)
 {
-	// pass this mouse event to the warp editor first
-	if (!Warp::handleMouseMove(mWarps, event)) {
+	if (!mMixes[0]->handleMouseMove(event)) {
 		// let your application perform its mouseMove handling here
 	}
 }
 
 void VideodrommControllerApp::mouseDown(MouseEvent event)
 {
-	// pass this mouse event to the warp editor first
-	if (!Warp::handleMouseDown(mWarps, event)) {
+	if (!mMixes[0]->handleMouseDown(event)) {
 		// let your application perform its mouseDown handling here
 	}
 }
 
 void VideodrommControllerApp::mouseDrag(MouseEvent event)
 {
-	// pass this mouse event to the warp editor first
-	if (!Warp::handleMouseDrag(mWarps, event)) {
+	if (!mMixes[0]->handleMouseDrag(event)) {
 		// let your application perform its mouseDrag handling here
 	}
 }
 
 void VideodrommControllerApp::mouseUp(MouseEvent event)
 {
-	// pass this mouse event to the warp editor first
-	if (!Warp::handleMouseUp(mWarps, event)) {
+	if (!mMixes[0]->handleMouseUp(event)) {
 		// let your application perform its mouseUp handling here
 	}
 }
 
 void VideodrommControllerApp::keyDown(KeyEvent event)
 {
-#if defined( CINDER_COCOA )
-	bool isModDown = event.isMetaDown();
-#else // windows
-	bool isModDown = event.isControlDown();
-#endif
-
-	if (isModDown) {
+	if (!mMixes[0]->handleKeyDown(event)) {
 		switch (event.getCode()) {
-		case KeyEvent::KEY_s:
-			fileWarpsName = "warps" + toString(getElapsedFrames()) + ".xml";
-			mWarpSettings = getAssetPath("") / mVDSettings->mAssetsPath / fileWarpsName;
-			Warp::writeSettings(mWarps, writeFile(mWarpSettings));
-			mWarpSettings = getAssetPath("") / mVDSettings->mAssetsPath / "warps.xml";
+		case KeyEvent::KEY_ESCAPE:
+			// quit the application
+			quit();
+			break;
+		case KeyEvent::KEY_h:
+			// mouse cursor and ui visibility
+			mVDSettings->mCursorVisible = !mVDSettings->mCursorVisible;
+			setUIVisibility(mVDSettings->mCursorVisible);
 			break;
 		}
 	}
-	else {
-		//fs::path moviePath;
-
-		// pass this key event to the warp editor first
-		if (!Warp::handleKeyDown(mWarps, event)) {
-			// warp editor did not handle the key, so handle it here
-			if (!mVDAnimation->handleKeyDown(event)) {
-				// Animation did not handle the key, so handle it here
-
-				switch (event.getCode()) {
-				case KeyEvent::KEY_ESCAPE:
-					// quit the application
-					quit();
-					break;
-				case KeyEvent::KEY_w:
-					// toggle warp edit mode
-					Warp::enableEditMode(!Warp::isEditModeEnabled());
-					break;
-				case KeyEvent::KEY_LEFT:
-					//mVDTextures->rewindMovie();				
-					break;
-				case KeyEvent::KEY_RIGHT:
-					//mVDTextures->fastforwardMovie();				
-					break;
-				case KeyEvent::KEY_SPACE:
-					//mVDTextures->playMovie();
-					//mVDAnimation->currentScene++;
-					//if (mMovie) { if (mMovie->isPlaying()) mMovie->stop(); else mMovie->play(); }
-					break;
-				case KeyEvent::KEY_0:
-					mWarpFboIndex = 0;
-					break;
-				case KeyEvent::KEY_1:
-					mWarpFboIndex = 1;
-					break;
-				case KeyEvent::KEY_2:
-					mWarpFboIndex = 2;
-					break;
-				case KeyEvent::KEY_l:
-					mVDAnimation->load();
-					//mLoopVideo = !mLoopVideo;
-					//if (mMovie) mMovie->setLoop(mLoopVideo);
-					break;
-				case KeyEvent::KEY_h:
-					// mouse cursor
-					mVDSettings->mCursorVisible = !mVDSettings->mCursorVisible;
-					setUIVisibility(mVDSettings->mCursorVisible);
-
-					break;
-				case KeyEvent::KEY_n:
-					mWarps.push_back(WarpPerspectiveBilinear::create());
-					Warp::handleResize(mWarps);
-					break;
-				}
-			}
-		}
+}
+void VideodrommControllerApp::keyUp(KeyEvent event)
+{
+	if (!mMixes[0]->handleKeyUp(event)) {
 	}
 }
 void VideodrommControllerApp::setUIVisibility(bool visible)
@@ -259,16 +197,6 @@ void VideodrommControllerApp::setUIVisibility(bool visible)
 	else
 	{
 		hideCursor();
-	}
-}
-void VideodrommControllerApp::keyUp(KeyEvent event)
-{
-	// pass this key event to the warp editor first
-	if (!Warp::handleKeyUp(mWarps, event)) {
-		// let your application perform its keyUp handling here
-		if (!mVDAnimation->handleKeyUp(event)) {
-			// Animation did not handle the key, so handle it here
-		}
 	}
 }
 
@@ -291,8 +219,7 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 	ci::fs::path mPath = event.getFile(event.getNumFiles() - 1);
 	string mFile = mPath.string();
 	if (mMixes[0]->loadFileFromAbsolutePath(mFile, index) > -1) {
-		// load success, reset zoom
-		mVDAnimation->controlValues[22] = 1.0f;
+		
 	}
 }
 
@@ -318,9 +245,10 @@ void VideodrommControllerApp::drawRenderWindow()
 	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);
 
 	// iterate over the warps and draw their content
-	for (auto &warp : mWarps) {
+	/*for (auto &warp : mWarps) {
 		warp->draw(mMixes[0]->getMixTexture(mWarpFboIndex), Area(0, 0, mMixes[0]->getFboTextureWidth(mWarpFboIndex), mMixes[0]->getFboTextureHeight(mWarpFboIndex)));
-	}
+	}*/
+	mMixes[0]->getRenderTexture();
 }
 
 void VideodrommControllerApp::drawControlWindow()

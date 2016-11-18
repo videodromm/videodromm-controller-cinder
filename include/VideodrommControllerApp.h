@@ -5,7 +5,7 @@
 // UserInterface
 #include "CinderImGui.h"
 // Warping
-#include "Warp.h"
+//#include "Warp.h"
 // Settings
 #include "VDSettings.h"
 // Session
@@ -25,7 +25,7 @@
 
 using namespace ci;
 using namespace ci::app;
-using namespace ph::warping;
+//using namespace ph::warping;
 using namespace VideoDromm;
 
 #define IM_ARRAYSIZE(_ARR)			((int)(sizeof(_ARR)/sizeof(*_ARR)))
@@ -89,11 +89,11 @@ private:
 	bool						mMovieDelay;
 
 	// warping
-	WarpList					mWarps;
+	/*WarpList					mWarps;
 	string						fileWarpsName;
 	//Area						mSrcArea;
 	fs::path					mWarpSettings;
-	unsigned int				mWarpFboIndex;
+	unsigned int				mWarpFboIndex;*/
 	bool						mFadeInDelay;
 	// timeline
 	Anim<float>					mSaveThumbTimer;

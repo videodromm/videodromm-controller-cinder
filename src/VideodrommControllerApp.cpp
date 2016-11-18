@@ -42,30 +42,13 @@ void VideodrommControllerApp::setup()
 	//mVDSettings->mRenderThumbs = false;
 	// Session
 	mVDSession = VDSession::create(mVDSettings);
-	// Utils
-	//mVDUtils = VDUtils::create(mVDSettings);
-	// Animation
-	mVDAnimation = VDAnimation::create(mVDSettings, mVDSession);
-	// Message router
-	mVDRouter = VDRouter::create(mVDSettings, mVDAnimation, mVDSession);
-
-	// Mix
-	mMixesFilepath = getAssetPath("") / "mixes.xml";
-	if (fs::exists(mMixesFilepath)) {
-		// load textures from file if one exists
-		mMixes = VDMix::readSettings(mVDSettings, mVDAnimation, mVDRouter, loadFile(mMixesFilepath));
-	}
-	else {
-		// otherwise create a texture from scratch
-		mMixes.push_back(VDMix::create(mVDSettings, mVDAnimation, mVDRouter));
-	}
 
 	setFrameRate(mVDSession->getTargetFps());
 	mMovieDelay = mFadeInDelay = true;
 	mVDAnimation->tapTempo();
 	mVDSession->getWindowsResolution();
 	// UI
-	mVDUI = VDUI::create(mVDSettings, mMixes[0], mVDRouter, mVDAnimation, mVDSession);
+	mVDUI = VDUI::create(mVDSettings, mVDSession);
 
 	getWindow()->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
 	getWindow()->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawRenderWindow, this));
@@ -92,7 +75,6 @@ void VideodrommControllerApp::setup()
 void VideodrommControllerApp::cleanup()
 {
 	CI_LOG_V("shutdown");
-	mMixes[0]->save();
 	mVDSettings->save();
 	mVDSession->save();
 	ui::Shutdown();
@@ -109,41 +91,41 @@ void VideodrommControllerApp::resizeWindow()
 	else {
 		ui::disconnectWindow(mControlWindow);
 	}
-	mMixes[0]->resize();
+	mVDSession->resize();
 
 }
 
 void VideodrommControllerApp::mouseMove(MouseEvent event)
 {
-	if (!mMixes[0]->handleMouseMove(event)) {
+	if (!mVDSession->handleMouseMove(event)) {
 		// let your application perform its mouseMove handling here
 	}
 }
 
 void VideodrommControllerApp::mouseDown(MouseEvent event)
 {
-	if (!mMixes[0]->handleMouseDown(event)) {
+	if (!mVDSession->handleMouseDown(event)) {
 		// let your application perform its mouseDown handling here
 	}
 }
 
 void VideodrommControllerApp::mouseDrag(MouseEvent event)
 {
-	if (!mMixes[0]->handleMouseDrag(event)) {
+	if (!mVDSession->handleMouseDrag(event)) {
 		// let your application perform its mouseDrag handling here
 	}
 }
 
 void VideodrommControllerApp::mouseUp(MouseEvent event)
 {
-	if (!mMixes[0]->handleMouseUp(event)) {
+	if (!mVDSession->handleMouseUp(event)) {
 		// let your application perform its mouseUp handling here
 	}
 }
 
 void VideodrommControllerApp::keyDown(KeyEvent event)
 {
-	if (!mMixes[0]->handleKeyDown(event)) {
+	if (!mVDSession->handleKeyDown(event)) {
 		switch (event.getCode()) {
 		case KeyEvent::KEY_ESCAPE:
 			// quit the application
@@ -159,7 +141,7 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 }
 void VideodrommControllerApp::keyUp(KeyEvent event)
 {
-	if (!mMixes[0]->handleKeyUp(event)) {
+	if (!mVDSession->handleKeyUp(event)) {
 	}
 }
 void VideodrommControllerApp::setUIVisibility(bool visible)
@@ -178,12 +160,10 @@ void VideodrommControllerApp::update()
 {
 	mVDSettings->iFps = getAverageFps();
 	mVDSettings->sFps = toString(floor(mVDSettings->iFps));
-	mMixes[0]->update();
-	mVDAnimation->update();
-	mVDRouter->update();
+	mVDSession->update();
 	// check if a shader has been received from websockets
 	if (mVDSettings->mShaderToLoad != "") {
-		mMixes[0]->loadFboFragmentShader(mVDSettings->mShaderToLoad, 1);
+		mVDSession->loadFboFragmentShader(mVDSettings->mShaderToLoad, 1);
 	}
 }
 void VideodrommControllerApp::fileDrop(FileDropEvent event)
@@ -191,7 +171,7 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 	int index = (int)(event.getX() / (mVDSettings->uiElementWidth + mVDSettings->uiMargin));// +1;
 	ci::fs::path mPath = event.getFile(event.getNumFiles() - 1);
 	string mFile = mPath.string();
-	if (mMixes[0]->loadFileFromAbsolutePath(mFile, index) > -1) {
+	if (mVDSession->loadFileFromAbsolutePath(mFile, index) > -1) {
 		
 	}
 }
@@ -218,7 +198,7 @@ void VideodrommControllerApp::drawRenderWindow()
 	gl::clear(Color::black());
 	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);
 
-	gl::draw(mMixes[0]->getRenderTexture(), getWindowBounds());
+	gl::draw(mVDSession->getRenderTexture(), getWindowBounds());
 }
 
 void VideodrommControllerApp::drawControlWindow()
@@ -227,7 +207,7 @@ void VideodrommControllerApp::drawControlWindow()
 	gl::clear(Color::black());
 	//gl::color(Color::white());
 	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, true);
-	gl::draw(mMixes[0]->getMixTexture(), Rectf(10 + mVDSettings->uiLargeW, 170, 650 + mVDSettings->uiLargeW, 650));
+	gl::draw(mVDSession->getMixTexture(), Rectf(10 + mVDSettings->uiLargeW, 170, 650 + mVDSettings->uiLargeW, 650));
 	// imgui
 	mVDUI->Run("UI", (int)getAverageFps());
 	if (mVDUI->isReady()) {

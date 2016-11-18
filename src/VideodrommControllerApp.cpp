@@ -43,7 +43,7 @@ void VideodrommControllerApp::setup()
 	// Session
 	mVDSession = VDSession::create(mVDSettings);
 	// Utils
-	mVDUtils = VDUtils::create(mVDSettings);
+	//mVDUtils = VDUtils::create(mVDSettings);
 	// Animation
 	mVDAnimation = VDAnimation::create(mVDSettings, mVDSession);
 	// Message router
@@ -63,7 +63,7 @@ void VideodrommControllerApp::setup()
 	setFrameRate(mVDSession->getTargetFps());
 	mMovieDelay = mFadeInDelay = true;
 	mVDAnimation->tapTempo();
-	mVDUtils->getWindowsResolution();
+	mVDSession->getWindowsResolution();
 	// UI
 	mVDUI = VDUI::create(mVDSettings, mMixes[0], mVDRouter, mVDAnimation, mVDSession);
 

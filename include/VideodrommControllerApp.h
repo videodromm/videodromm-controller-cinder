@@ -11,13 +11,13 @@
 // Log
 #include "VDLog.h"
 // Utils
-#include "VDUtils.h"
+//#include "VDUtils.h"
 // Message router
-#include "VDRouter.h"
+//#include "VDRouter.h"
 // Animation
-#include "VDAnimation.h"
+//#include "VDAnimation.h"
 // Textures
-#include "VDMix.h"
+//#include "VDMix.h"
 // UI
 #include "VDUI.h"
 
@@ -59,7 +59,7 @@ private:
 	// Log
 	VDLogRef					mVDLog;
 	// Utils
-	VDUtilsRef					mVDUtils;
+	//VDUtilsRef					mVDUtils;
 	// Message router
 	VDRouterRef					mVDRouter;
 	// Animation

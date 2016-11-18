@@ -53,7 +53,6 @@ public:
 	void keyDown(KeyEvent event) override;
 	void keyUp(KeyEvent event) override;
 
-	void updateWindowTitle();
 	void setUIVisibility(bool visible);
 private:
 	// Settings

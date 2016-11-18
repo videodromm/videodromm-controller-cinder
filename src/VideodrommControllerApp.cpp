@@ -211,7 +211,6 @@ void VideodrommControllerApp::update()
 	if (mVDSettings->mShaderToLoad != "") {
 		mMixes[0]->loadFboFragmentShader(mVDSettings->mShaderToLoad, 1);
 	}
-	updateWindowTitle();
 }
 void VideodrommControllerApp::fileDrop(FileDropEvent event)
 {
@@ -225,6 +224,7 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 
 void VideodrommControllerApp::drawRenderWindow()
 {
+	getWindow()->setTitle("(" + mVDSettings->sFps + " fps) " + toString(mVDSettings->iBeat) + " Videodromm");
 	//renderSceneToFbo();
 	if (mFadeInDelay) {
 		if (getElapsedFrames() > mVDSession->getFadeInDelay()) {
@@ -248,7 +248,7 @@ void VideodrommControllerApp::drawRenderWindow()
 	/*for (auto &warp : mWarps) {
 		warp->draw(mMixes[0]->getMixTexture(mWarpFboIndex), Area(0, 0, mMixes[0]->getFboTextureWidth(mWarpFboIndex), mMixes[0]->getFboTextureHeight(mWarpFboIndex)));
 	}*/
-	mMixes[0]->getRenderTexture();
+	gl::draw(mMixes[0]->getRenderTexture(), getWindowBounds());
 }
 
 void VideodrommControllerApp::drawControlWindow()
@@ -436,11 +436,6 @@ void VideodrommControllerApp::drawControlWindow()
 #pragma endregion warps
 	}
 	mVDUI->Run("UI", (int)getAverageFps());
-}
-
-void VideodrommControllerApp::updateWindowTitle()
-{
-	getWindow()->setTitle("(" + mVDSettings->sFps + " fps) " + toString(mVDSettings->iBeat) + " Videodromm");
 }
 
 CINDER_APP(VideodrommControllerApp, RendererGl, &VideodrommControllerApp::prepare)

@@ -51,8 +51,6 @@ private:
 	VDSessionRef				mVDSession;
 	// Log
 	VDLogRef					mVDLog;
-	// Animation
-	VDAnimationRef				mVDAnimation;
 	// UI
 	VDUIRef						mVDUI;
 

@@ -45,7 +45,6 @@ void VideodrommControllerApp::setup()
 
 	setFrameRate(mVDSession->getTargetFps());
 	mMovieDelay = mFadeInDelay = true;
-	mVDAnimation->tapTempo();
 	mVDSession->getWindowsResolution();
 	// UI
 	mVDUI = VDUI::create(mVDSettings, mVDSession);

@@ -8,9 +8,6 @@
 #include "VDSettings.h"
 // Session
 #include "VDSession.h"
-// Log
-#include "VDLog.h"
-
 // UI
 #include "VDUI.h"
 
@@ -49,8 +46,6 @@ private:
 	VDSettingsRef				mVDSettings;
 	// Session
 	VDSessionRef				mVDSession;
-	// Log
-	VDLogRef					mVDLog;
 	// UI
 	VDUIRef						mVDUI;
 

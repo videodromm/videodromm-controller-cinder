@@ -32,9 +32,6 @@ void VideodrommControllerApp::prepare(Settings *settings)
 }
 void VideodrommControllerApp::setup()
 {
-
-	// Log
-	mVDLog = VDLog::create();
 	CI_LOG_V("Controller");
 	// Settings
 	mVDSettings = VDSettings::create();

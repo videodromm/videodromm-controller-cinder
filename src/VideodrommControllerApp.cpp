@@ -162,12 +162,7 @@ void VideodrommControllerApp::update()
 }
 void VideodrommControllerApp::fileDrop(FileDropEvent event)
 {
-	int index = (int)(event.getX() / (mVDSettings->uiElementWidth + mVDSettings->uiMargin));// +1;
-	ci::fs::path mPath = event.getFile(event.getNumFiles() - 1);
-	string mFile = mPath.string();
-	if (mVDSession->loadFileFromAbsolutePath(mFile, index) > -1) {
-		
-	}
+	mVDSession->fileDrop(event);
 }
 
 void VideodrommControllerApp::drawRenderWindow()

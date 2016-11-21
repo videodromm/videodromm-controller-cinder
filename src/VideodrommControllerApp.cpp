@@ -35,8 +35,6 @@ void VideodrommControllerApp::setup()
 	CI_LOG_V("Controller");
 	// Settings
 	mVDSettings = VDSettings::create();
-	mVDSettings->mLiveCode = false;
-	//mVDSettings->mRenderThumbs = false;
 	// Session
 	mVDSession = VDSession::create(mVDSettings);
 

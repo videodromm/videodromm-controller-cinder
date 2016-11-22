@@ -152,13 +152,12 @@ void VideodrommControllerApp::setUIVisibility(bool visible)
 
 void VideodrommControllerApp::update()
 {
-	mVDSettings->iFps = getAverageFps();
-	mVDSettings->sFps = toString(floor(mVDSettings->iFps));
+	mVDSession->setControlValue(30, getAverageFps());
 	mVDSession->update();
-	// check if a shader has been received from websockets
+	/* obsolete check if a shader has been received from websockets
 	if (mVDSettings->mShaderToLoad != "") {
 		mVDSession->loadFboFragmentShader(mVDSettings->mShaderToLoad, 1);
-	}
+	}*/
 }
 void VideodrommControllerApp::fileDrop(FileDropEvent event)
 {
@@ -194,7 +193,7 @@ void VideodrommControllerApp::drawControlWindow()
 
 	gl::clear(Color::black());
 	//gl::color(Color::white());
-	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, true);
+	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);
 	gl::draw(mVDSession->getMixTexture(), Rectf(10 + mVDSettings->uiLargeW, 170, 650 + mVDSettings->uiLargeW, 650));
 	gl::draw(mVDSession->getRenderedTexture(), Rectf(0, 170, 350 , 350));
 

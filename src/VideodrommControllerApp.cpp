@@ -170,6 +170,7 @@ void VideodrommControllerApp::drawRenderWindow()
 	getWindow()->setTitle("(" + mVDSettings->sFps + " fps) " + toString(mVDSettings->iBeat) + " Videodromm");
 	//renderSceneToFbo();
 	if (mFadeInDelay) {
+		mVDSettings->iAlpha = 0.0f;
 		if (getElapsedFrames() > mVDSession->getFadeInDelay()) {
 			mFadeInDelay = false;
 			setWindowSize(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight);
@@ -186,8 +187,6 @@ void VideodrommControllerApp::drawRenderWindow()
 		}*/
 	gl::clear(Color::black());
 	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);
-
-	gl::draw(mVDSession->getRenderTexture(), getWindowBounds());
 }
 
 void VideodrommControllerApp::drawControlWindow()
@@ -197,6 +196,8 @@ void VideodrommControllerApp::drawControlWindow()
 	//gl::color(Color::white());
 	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, true);
 	gl::draw(mVDSession->getMixTexture(), Rectf(10 + mVDSettings->uiLargeW, 170, 650 + mVDSettings->uiLargeW, 650));
+	gl::draw(mVDSession->getRenderedTexture(), Rectf(0, 170, 350 , 350));
+
 	// imgui
 	mVDUI->Run("UI", (int)getAverageFps());
 	if (mVDUI->isReady()) {

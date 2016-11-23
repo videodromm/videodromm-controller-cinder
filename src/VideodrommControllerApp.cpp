@@ -186,6 +186,7 @@ void VideodrommControllerApp::drawRenderWindow()
 		}*/
 	gl::clear(Color::black());
 	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);
+	gl::draw(mVDSession->getRenderTexture(), getWindowBounds());
 }
 
 void VideodrommControllerApp::drawControlWindow()

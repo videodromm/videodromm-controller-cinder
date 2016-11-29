@@ -191,11 +191,10 @@ void VideodrommControllerApp::drawRenderWindow()
 
 void VideodrommControllerApp::drawControlWindow()
 {
-
 	gl::clear(Color::black());
 	//gl::color(Color::white());
 	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);
-	gl::draw(mVDSession->getMixTexture(), Rectf(10 + mVDSettings->uiLargeW, 170, 650 + mVDSettings->uiLargeW, 650));
+	//gl::draw(mVDSession->getMixTexture(), Rectf(10 + mVDSettings->uiLargeW, 170, 650 + mVDSettings->uiLargeW, 650));
 	gl::draw(mVDSession->getRenderedTexture(), Rectf(0, 170, 350 , 350));
 
 	// imgui

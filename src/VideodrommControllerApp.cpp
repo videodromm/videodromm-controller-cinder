@@ -152,7 +152,7 @@ void VideodrommControllerApp::setUIVisibility(bool visible)
 
 void VideodrommControllerApp::update()
 {
-	mVDSession->setControlValue(30, getAverageFps());
+	mVDSession->setControlValue(20, getAverageFps());
 	mVDSession->update();
 	/* obsolete check if a shader has been received from websockets
 	if (mVDSettings->mShaderToLoad != "") {

@@ -41,31 +41,50 @@ void VideodrommControllerApp::setup()
 	setFrameRate(mVDSession->getTargetFps());
 	mMovieDelay = mFadeInDelay = true;
 	mVDSession->getWindowsResolution();
-	// UI
-	mVDUI = VDUI::create(mVDSettings, mVDSession);
 
 	getWindow()->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
 	getWindow()->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawRenderWindow, this));
 
-	if (mVDSettings->mStandalone) {
-
-	}
-	else {
-
-		// OK mControlWindow = createWindow(Window::Format().size(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight));
-		mControlWindow = createWindow(Window::Format().size(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight));
-		mControlWindow->setPos(mVDSettings->mMainWindowX, mVDSettings->mMainWindowY);
-		//mControlWindow->setBorderless();
-		mControlWindow->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawControlWindow, this));
-		mControlWindow->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
-	}
-
 	// mouse cursor and ui
 	setUIVisibility(mVDSettings->mCursorVisible);
-	// maximize fps
-	//disableFrameRate();
-	//gl::enableVerticalSync(false);
+	// UI
+	mVDUI = VDUI::create(mVDSettings, mVDSession);
+
 	setFrameRate(mVDSession->getTargetFps());
+	CI_LOG_V("setup");
+
+}
+void VideodrommControllerApp::createControlWindow()
+{
+	mVDUI->resize();
+
+	deleteControlWindows();
+	mVDSession->getWindowsResolution();
+
+	mVDSettings->iResolution.x = mVDSettings->mRenderWidth;
+	mVDSettings->iResolution.y = mVDSettings->mRenderHeight;
+
+	CI_LOG_V("createRenderWindow, resolution:" + toString(mVDSettings->iResolution.x) + "x" + toString(mVDSettings->iResolution.y));
+
+	string windowName = "render";
+	// OK mControlWindow = createWindow(Window::Format().size(mVDSettings->mMainWindowWidth, mVDSettings->mMainWindowHeight));
+	mControlWindow = createWindow(Window::Format().size(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight));
+	mControlWindow->setPos(mVDSettings->mMainWindowX, mVDSettings->mMainWindowY);
+	//mControlWindow->setBorderless();
+	mControlWindow->getSignalDraw().connect(std::bind(&VideodrommControllerApp::drawControlWindow, this));
+	mControlWindow->getSignalResize().connect(std::bind(&VideodrommControllerApp::resizeWindow, this));
+
+	// create instance of the window and store in vector
+	allWindows.push_back(mControlWindow);
+	mVDSettings->mRenderPosXY = ivec2(mVDSettings->mRenderX, mVDSettings->mRenderY);
+}
+
+void VideodrommControllerApp::deleteControlWindows()
+{
+#if defined( CINDER_MSW )
+	for (auto wRef : allWindows) DestroyWindow((HWND)mControlWindow->getNative());
+#endif
+	allWindows.clear();
 }
 void VideodrommControllerApp::cleanup()
 {
@@ -78,6 +97,8 @@ void VideodrommControllerApp::cleanup()
 
 void VideodrommControllerApp::resizeWindow()
 {
+	CI_LOG_V("rs");
+
 	mVDUI->resize();
 	if (mVDSettings->mStandalone) {
 		// set ui window and io events callbacks
@@ -120,17 +141,36 @@ void VideodrommControllerApp::mouseUp(MouseEvent event)
 
 void VideodrommControllerApp::keyDown(KeyEvent event)
 {
-	if (!mVDSession->handleKeyDown(event)) {
+#if defined( CINDER_COCOA )
+	bool isModDown = event.isMetaDown();
+#else // windows
+	bool isModDown = event.isControlDown();
+#endif
+	if (isModDown) {
 		switch (event.getCode()) {
-		case KeyEvent::KEY_ESCAPE:
+		case KeyEvent::KEY_r:
 			// quit the application
-			quit();
+			createControlWindow();
 			break;
-		case KeyEvent::KEY_h:
-			// mouse cursor and ui visibility
-			mVDSettings->mCursorVisible = !mVDSettings->mCursorVisible;
-			setUIVisibility(mVDSettings->mCursorVisible);
+		case KeyEvent::KEY_d:
+			// quit the application
+			if (isModDown) deleteControlWindows();
 			break;
+		}
+	}
+	else {
+		if (!mVDSession->handleKeyDown(event)) {
+			switch (event.getCode()) {
+			case KeyEvent::KEY_ESCAPE:
+				// quit the application
+				quit();
+				break;
+			case KeyEvent::KEY_h:
+				// mouse cursor and ui visibility
+				mVDSettings->mCursorVisible = !mVDSettings->mCursorVisible;
+				setUIVisibility(mVDSettings->mCursorVisible);
+				break;
+			}
 		}
 	}
 }
@@ -153,11 +193,13 @@ void VideodrommControllerApp::setUIVisibility(bool visible)
 
 void VideodrommControllerApp::update()
 {
+	CI_LOG_V("up");
+
 	mVDSession->setControlValue(20, getAverageFps());
 	mVDSession->update();
 	/* obsolete check if a shader has been received from websockets
 	if (mVDSettings->mShaderToLoad != "") {
-		mVDSession->loadFboFragmentShader(mVDSettings->mShaderToLoad, 1);
+	mVDSession->loadFboFragmentShader(mVDSettings->mShaderToLoad, 1);
 	}*/
 }
 void VideodrommControllerApp::fileDrop(FileDropEvent event)
@@ -167,6 +209,8 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 
 void VideodrommControllerApp::drawRenderWindow()
 {
+	CI_LOG_V("dr");
+
 	getWindow()->setTitle("(" + mVDSettings->sFps + " fps) " + toString(mVDSettings->iBeat) + " Videodromm");
 	//renderSceneToFbo();
 	if (mFadeInDelay) {
@@ -192,6 +236,8 @@ void VideodrommControllerApp::drawRenderWindow()
 
 void VideodrommControllerApp::drawControlWindow()
 {
+	CI_LOG_V("dc");
+
 	gl::clear(Color::black());
 	//gl::color(Color::white());
 	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);

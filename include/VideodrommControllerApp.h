@@ -51,6 +51,10 @@ private:
 
 	// window mgmt
 	WindowRef					mControlWindow;
+	void						createControlWindow();
+	void						deleteControlWindows();
+	vector<WindowRef>			allWindows;
+	void						positionRenderWindow();
 
 	// movie
 	bool						mMovieDelay;

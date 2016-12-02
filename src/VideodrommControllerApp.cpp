@@ -52,7 +52,6 @@ void VideodrommControllerApp::setup()
 
 	setFrameRate(mVDSession->getTargetFps());
 	CI_LOG_V("setup");
-
 }
 void VideodrommControllerApp::createControlWindow()
 {
@@ -97,8 +96,6 @@ void VideodrommControllerApp::cleanup()
 
 void VideodrommControllerApp::resizeWindow()
 {
-	CI_LOG_V("rs");
-
 	mVDUI->resize();
 	if (mVDSettings->mStandalone) {
 		// set ui window and io events callbacks
@@ -107,8 +104,6 @@ void VideodrommControllerApp::resizeWindow()
 	else {
 		ui::disconnectWindow(mControlWindow);
 	}
-	mVDSession->resize();
-
 }
 
 void VideodrommControllerApp::mouseMove(MouseEvent event)
@@ -193,8 +188,6 @@ void VideodrommControllerApp::setUIVisibility(bool visible)
 
 void VideodrommControllerApp::update()
 {
-	CI_LOG_V("up");
-
 	mVDSession->setControlValue(20, getAverageFps());
 	mVDSession->update();
 	/* obsolete check if a shader has been received from websockets
@@ -209,8 +202,6 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 
 void VideodrommControllerApp::drawRenderWindow()
 {
-	CI_LOG_V("dr");
-
 	getWindow()->setTitle("(" + mVDSettings->sFps + " fps) " + toString(mVDSettings->iBeat) + " Videodromm");
 	//renderSceneToFbo();
 	if (mFadeInDelay) {
@@ -219,6 +210,8 @@ void VideodrommControllerApp::drawRenderWindow()
 			mFadeInDelay = false;
 			setWindowSize(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight);
 			setWindowPos(ivec2(mVDSettings->mRenderX, mVDSettings->mRenderY));
+			// warps resize at the end
+			mVDSession->resize();
 			timeline().apply(&mVDSettings->iAlpha, 0.0f, 1.0f, 1.5f, EaseInCubic());
 		}
 	}

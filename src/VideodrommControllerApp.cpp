@@ -63,8 +63,9 @@ void VideodrommControllerApp::setup()
 	// mouse cursor and ui
 	setUIVisibility(mVDSettings->mCursorVisible);
 	// maximize fps
-	disableFrameRate();
-	gl::enableVerticalSync(false);
+	//disableFrameRate();
+	//gl::enableVerticalSync(false);
+	setFrameRate(mVDSession->getTargetFps());
 }
 void VideodrommControllerApp::cleanup()
 {
@@ -194,8 +195,8 @@ void VideodrommControllerApp::drawControlWindow()
 	gl::clear(Color::black());
 	//gl::color(Color::white());
 	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);
-	//gl::draw(mVDSession->getMixTexture(), Rectf(10 + mVDSettings->uiLargeW, 170, 650 + mVDSettings->uiLargeW, 650));
-	gl::draw(mVDSession->getRenderedTexture(), Rectf(0, 170, 350 , 350));
+	gl::draw(mVDSession->getMixTexture(), Rectf(10 + mVDSettings->uiLargeW, 170, 650 + mVDSettings->uiLargeW, 650));
+	//gl::draw(mVDSession->getMixTexture(), Rectf(0, 170, 350 , 350));
 
 	// imgui
 	mVDUI->Run("UI", (int)getAverageFps());

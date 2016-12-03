@@ -229,8 +229,6 @@ void VideodrommControllerApp::drawRenderWindow()
 
 void VideodrommControllerApp::drawControlWindow()
 {
-	CI_LOG_V("dc");
-
 	gl::clear(Color::black());
 	//gl::color(Color::white());
 	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);

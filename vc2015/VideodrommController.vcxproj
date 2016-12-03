@@ -118,6 +118,7 @@ xcopy /y "..\..\..\Cinder\blocks\Cinder-Spout\lib\SpoutPanel.exe" "$(OutDir)"</C
   </ItemGroup>
   <ItemGroup>
     <Xml Include="Debug\VDSettings.xml" />
+    <Xml Include="Release\VDSettings.xml" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

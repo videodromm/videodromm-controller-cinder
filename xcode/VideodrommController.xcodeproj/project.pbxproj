@@ -66,6 +66,9 @@
 		D2E7917C76CB4500B2C20686 /* VDUIAudio.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C5C32338A1E34180BB79029C /* VDUIAudio.cpp */; };
 		E9D13CE2CFA24DFCB6014385 /* VDAnimation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0E90D28610AC4FC288E78161 /* VDAnimation.cpp */; };
 		F8A8755B22D34E159D55051B /* WarpBilinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F1D796B4FC4F447E8EF22DCA /* WarpBilinear.cpp */; };
+		324592CB1DFAE33A000F065E /* VDUIWarps.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 324592C91DFAE339000F065E /* VDUIWarps.cpp */; };
+		324592CC1DFAE33A000F065E /* VDWebsocket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 324592CA1DFAE33A000F065E /* VDWebsocket.cpp */; };
+
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -458,6 +461,7 @@
 				0BDF31E965314826BEA90BFE /* VDUIShaders.cpp */,
 				F08885CDDDA348B4818B8390 /* VDUITempo.cpp */,
 				D5516F7FA66C432E84DC754A /* VDUITextures.cpp */,
+				324592C91DFAE339000F065E /* VDUIWarps.cpp */,
 				745DC5DC350D44E5A9B9EB9F /* VDUIWebsockets.cpp */,
 				C5907CD3CFD44F1FA23CBFCE /* VDUtils.cpp */,
 			);
@@ -609,6 +613,7 @@
 				5681E43128C948118E87EEC9 /* imgui_draw.cpp in Sources */,
 				7B69CC5CBF494B0981B512AF /* imgui_demo.cpp in Sources */,
 				76D09B3FA84B494EBDA0E6DD /* syphonClient.mm in Sources */,
+				324592CC1DFAE33A000F065E /* VDWebsocket.cpp in Sources */,
 				5ED2300919634EF281C7F579 /* syphonServer.mm in Sources */,
 				D121C875D2C846ECB72540E1 /* syphonServerDirectory.mm in Sources */,
 				B49DC768C6A549208D9EEBDA /* SyphonNameboundClient.m in Sources */,

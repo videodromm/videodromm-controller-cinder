@@ -136,36 +136,23 @@ void VideodrommControllerApp::mouseUp(MouseEvent event)
 
 void VideodrommControllerApp::keyDown(KeyEvent event)
 {
-#if defined( CINDER_COCOA )
-	bool isModDown = event.isMetaDown();
-#else // windows
-	bool isModDown = event.isControlDown();
-#endif
-	if (isModDown) {
+	if (!mVDSession->handleKeyDown(event)) {
 		switch (event.getCode()) {
-		case KeyEvent::KEY_r:
-			// quit the application
+		case KeyEvent::KEY_KP_PLUS:
 			createControlWindow();
 			break;
-		case KeyEvent::KEY_d:
-			// quit the application
-			if (isModDown) deleteControlWindows();
+		case KeyEvent::KEY_KP_MINUS:
+			deleteControlWindows();
 			break;
-		}
-	}
-	else {
-		if (!mVDSession->handleKeyDown(event)) {
-			switch (event.getCode()) {
-			case KeyEvent::KEY_ESCAPE:
-				// quit the application
-				quit();
-				break;
-			case KeyEvent::KEY_h:
-				// mouse cursor and ui visibility
-				mVDSettings->mCursorVisible = !mVDSettings->mCursorVisible;
-				setUIVisibility(mVDSettings->mCursorVisible);
-				break;
-			}
+		case KeyEvent::KEY_ESCAPE:
+			// quit the application
+			quit();
+			break;
+		case KeyEvent::KEY_h:
+			// mouse cursor and ui visibility
+			mVDSettings->mCursorVisible = !mVDSettings->mCursorVisible;
+			setUIVisibility(mVDSettings->mCursorVisible);
+			break;
 		}
 	}
 }

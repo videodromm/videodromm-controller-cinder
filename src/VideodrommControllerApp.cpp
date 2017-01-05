@@ -59,10 +59,6 @@ void VideodrommControllerApp::createControlWindow()
 
 	deleteControlWindows();
 	mVDSession->getWindowsResolution();
-
-	mVDSettings->iResolution.x = mVDSettings->mRenderWidth;
-	mVDSettings->iResolution.y = mVDSettings->mRenderHeight;
-
 	CI_LOG_V("createRenderWindow, resolution:" + toString(mVDSettings->iResolution.x) + "x" + toString(mVDSettings->iResolution.y));
 
 	string windowName = "render";

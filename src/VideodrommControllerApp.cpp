@@ -171,6 +171,14 @@ void VideodrommControllerApp::setUIVisibility(bool visible)
 
 void VideodrommControllerApp::update()
 {
+	switch (mVDSession->getCmd()) {
+	case 0:
+		createControlWindow();
+		break;
+	case 1:
+		deleteControlWindows();
+		break;
+	}
 	mVDSession->setControlValue(mVDSettings->IFPS, getAverageFps());
 	mVDSession->update();
 	/* obsolete check if a shader has been received from websockets

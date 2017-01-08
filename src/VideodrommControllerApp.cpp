@@ -225,10 +225,12 @@ void VideodrommControllerApp::drawControlWindow()
 	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);
 	gl::draw(mVDSession->getMixTexture(mVDSession->getCurrentEditIndex()), Rectf(10 + mVDSettings->uiLargeW, 170, 650 + mVDSettings->uiLargeW, 650));
 	//gl::draw(mVDSession->getMixTexture(), Rectf(0, 170, 350 , 350));
+	if (mVDSettings->mCursorVisible) {
+		// imgui
+		mVDUI->Run("UI", (int)getAverageFps());
+		if (mVDUI->isReady()) {
+		}
 
-	// imgui
-	mVDUI->Run("UI", (int)getAverageFps());
-	if (mVDUI->isReady()) {
 	}
 }
 

@@ -122,6 +122,8 @@ xcopy /y "..\..\..\Cinder\blocks\Cinder-Spout\lib\SpoutPanel.exe" "$(OutDir)"</C
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <ClInclude Include="..\..\..\Cinder\blocks\Cinder-MIDI2\include\MidiConstants.h" />
+    <ClInclude Include="..\..\..\Cinder\blocks\Cinder-MIDI2\include\MidiIn.h" />
     <ClInclude Include="..\..\..\Cinder\blocks\Cinder-Videodromm\include\VDTriangle.h" />
     <ClInclude Include="..\..\..\Cinder\blocks\Cinder-Videodromm\include\VDUIRender.h" />
     <ClInclude Include="..\..\..\Cinder\blocks\Cinder-Videodromm\include\VDUITriangles.h" />

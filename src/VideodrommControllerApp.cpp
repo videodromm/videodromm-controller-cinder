@@ -179,7 +179,7 @@ void VideodrommControllerApp::update()
 		deleteControlWindows();
 		break;
 	}
-	mVDSession->setControlValue(mVDSettings->IFPS, getAverageFps());
+	mVDSession->setFloatUniformValueByIndex(mVDSettings->IFPS, getAverageFps());
 	mVDSession->update();
 	/* obsolete check if a shader has been received from websockets
 	if (mVDSettings->mShaderToLoad != "") {

@@ -91,6 +91,9 @@
     <Filter Include="Release">
       <UniqueIdentifier>{03b2f3f4-8a96-4da0-8677-05faba792d0e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\AudioDrawUtils">
+      <UniqueIdentifier>{efad1714-ddd6-4c63-a148-3fcfa6994f53}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\VideodrommControllerApp.cpp">
@@ -384,6 +387,9 @@
     <ClCompile Include="..\..\..\Cinder\blocks\Cinder-MIDI2\src\MidiMessage.cpp">
       <Filter>Blocks\Midi2\src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Cinder\samples\_audio\common\AudioDrawUtils.cpp">
+      <Filter>Source Files\AudioDrawUtils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Resources.h">
@@ -412,6 +418,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Cinder\blocks\Cinder-MIDI2\include\MidiConstants.h">
       <Filter>Blocks\Midi2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Cinder\samples\_audio\common\AudioDrawUtils.h">
+      <Filter>Source Files\AudioDrawUtils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

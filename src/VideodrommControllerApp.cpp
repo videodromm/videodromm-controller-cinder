@@ -29,6 +29,10 @@ void VideodrommControllerApp::prepare(Settings *settings)
 {
 	settings->setWindowSize(40, 10);
 	settings->setBorderless();
+#ifdef _DEBUG
+	settings->setConsoleWindowEnabled();
+#else
+#endif  // _DEBUG
 }
 void VideodrommControllerApp::setup()
 {
@@ -214,7 +218,7 @@ void VideodrommControllerApp::drawRenderWindow()
 		}
 		}*/
 	gl::clear(Color::black());
-	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);
+	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight);// , false);
 	gl::draw(mVDSession->getRenderTexture(), getWindowBounds());
 }
 
@@ -222,7 +226,7 @@ void VideodrommControllerApp::drawControlWindow()
 {
 	gl::clear(Color::black());
 	//gl::color(Color::white());
-	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight, false);
+	gl::setMatricesWindow(mVDSettings->mRenderWidth, mVDSettings->mRenderHeight);// , false);
 	gl::draw(mVDSession->getMixTexture(mVDSession->getCurrentEditIndex()), Rectf(10 + mVDSettings->uiLargeW, 170, 650 + mVDSettings->uiLargeW, 650));
 	//gl::draw(mVDSession->getMixTexture(), Rectf(0, 170, 350 , 350));
 	if (mVDSettings->mCursorVisible) {

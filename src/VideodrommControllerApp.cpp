@@ -30,7 +30,7 @@ void VideodrommControllerApp::prepare(Settings *settings)
 	settings->setWindowSize(40, 10);
 	settings->setBorderless();
 #ifdef _DEBUG
-	settings->setConsoleWindowEnabled();
+	//settings->setConsoleWindowEnabled();
 #else
 #endif  // _DEBUG
 }

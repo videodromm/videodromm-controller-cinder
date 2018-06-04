@@ -139,11 +139,14 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 	if (!mVDSession->handleKeyDown(event)) {
 		switch (event.getCode()) {
 		case KeyEvent::KEY_KP_PLUS:
-			createControlWindow();
+		case KeyEvent::KEY_DOLLAR:
+			createRenderWindow();
 			break;
 		case KeyEvent::KEY_KP_MINUS:
-			deleteControlWindows();
+		case KeyEvent::KEY_BACKSPACE:
+			deleteRenderWindows();
 			break;
+
 		case KeyEvent::KEY_ESCAPE:
 			// quit the application
 			quit();

@@ -140,11 +140,11 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 		switch (event.getCode()) {
 		case KeyEvent::KEY_KP_PLUS:
 		case KeyEvent::KEY_DOLLAR:
-			createRenderWindow();
+			createControlWindow();
 			break;
 		case KeyEvent::KEY_KP_MINUS:
 		case KeyEvent::KEY_BACKSPACE:
-			deleteRenderWindows();
+			deleteControlWindows();
 			break;
 
 		case KeyEvent::KEY_ESCAPE:

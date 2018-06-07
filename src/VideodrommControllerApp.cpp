@@ -140,6 +140,8 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 		switch (event.getCode()) {
 		case KeyEvent::KEY_KP_PLUS:
 		case KeyEvent::KEY_DOLLAR:
+		case KeyEvent::KEY_TAB:
+
 			createControlWindow();
 			break;
 		case KeyEvent::KEY_KP_MINUS:

@@ -27,8 +27,9 @@ fps = 142 / 60 * 4 = 9.46
 
 void VideodrommControllerApp::prepare(Settings *settings)
 {
-	settings->setWindowSize(40, 10);
+	settings->setWindowSize(1280, 720);
 	settings->setBorderless();
+	settings->setConsoleWindowEnabled();
 #ifdef _DEBUG
 	//settings->setConsoleWindowEnabled();
 #else
@@ -38,7 +39,7 @@ void VideodrommControllerApp::setup()
 {
 	CI_LOG_V("Controller");
 	// Settings
-	mVDSettings = VDSettings::create();
+	mVDSettings = VDSettings::create("Controller");
 	// Session
 	mVDSession = VDSession::create(mVDSettings);
 
@@ -202,7 +203,7 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 
 void VideodrommControllerApp::drawRenderWindow()
 {
-	getWindow()->setTitle("(" + mVDSettings->sFps + " fps) " + toString(mVDSettings->iBeat) + " Videodromm");
+	getWindow()->setTitle("(" + mVDSettings->sFps + " fps) " + toString(mVDSettings->iPhase) + " Videodromm");
 	//renderSceneToFbo();
 	if (mFadeInDelay) {
 		mVDSettings->iAlpha = 0.0f;

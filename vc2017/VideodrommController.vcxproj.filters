@@ -82,6 +82,9 @@
     <Filter Include="Source Files\AudioDrawUtils">
       <UniqueIdentifier>{efad1714-ddd6-4c63-a148-3fcfa6994f53}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Blocks\OSC">
+      <UniqueIdentifier>{58dd7b25-6b7f-4478-9abc-e11ff0fe8535}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\VideodrommControllerApp.cpp">
@@ -360,6 +363,9 @@
     <ClCompile Include="..\..\..\Cinder\samples\_audio\common\AudioDrawUtils.cpp">
       <Filter>Source Files\AudioDrawUtils</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Cinder\blocks\OSC\src\cinder\osc\Osc.cpp">
+      <Filter>Blocks\OSC</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Resources.h">
@@ -385,6 +391,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Cinder\samples\_audio\common\AudioDrawUtils.h">
       <Filter>Source Files\AudioDrawUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Cinder\blocks\OSC\src\cinder\osc\Osc.h">
+      <Filter>Blocks\OSC</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

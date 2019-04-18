@@ -140,21 +140,14 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 	if (!mVDSession->handleKeyDown(event)) {
 		switch (event.getCode()) {
 		case KeyEvent::KEY_KP_PLUS:
-		case KeyEvent::KEY_DOLLAR:
 		case KeyEvent::KEY_TAB:
-
 			createControlWindow();
 			break;
 		case KeyEvent::KEY_KP_MINUS:
 		case KeyEvent::KEY_BACKSPACE:
 			deleteControlWindows();
 			break;
-
-		case KeyEvent::KEY_ESCAPE:
-			// quit the application
-			quit();
-			break;
-		case KeyEvent::KEY_h:
+		case KeyEvent::KEY_c:
 			// mouse cursor and ui visibility
 			mVDSettings->mCursorVisible = !mVDSettings->mCursorVisible;
 			setUIVisibility(mVDSettings->mCursorVisible);

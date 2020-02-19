@@ -92,7 +92,6 @@ void VideodrommControllerApp::cleanup()
 	mVDSettings->save();
 	mVDSession->save();
 	ui::Shutdown();
-	quit();
 }
 
 void VideodrommControllerApp::resizeWindow()
@@ -152,6 +151,10 @@ void VideodrommControllerApp::keyDown(KeyEvent event)
 			mVDSettings->mCursorVisible = !mVDSettings->mCursorVisible;
 			setUIVisibility(mVDSettings->mCursorVisible);
 			break;
+		case KeyEvent::KEY_F12:
+			// quit the application
+			quit();
+			break;
 		}
 	}
 }
@@ -196,7 +199,7 @@ void VideodrommControllerApp::fileDrop(FileDropEvent event)
 
 void VideodrommControllerApp::drawRenderWindow()
 {
-	getWindow()->setTitle("(" + mVDSettings->sFps + " fps) " + toString(mVDSettings->iPhase) + " Videodromm");
+	getWindow()->setTitle("(" + mVDSettings->sFps + " fps) Videodromm");
 	//renderSceneToFbo();
 	if (mFadeInDelay) {
 		mVDSettings->iAlpha = 0.0f;

@@ -13,7 +13,7 @@
 
 using namespace ci;
 using namespace ci::app;
-using namespace VideoDromm;
+using namespace videodromm;
 
 #define IM_ARRAYSIZE(_ARR)			((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
